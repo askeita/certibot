@@ -1,0 +1,36 @@
+<!-- Modal for the duration of training -->
+<div class="modal fade" id="trainingModal" tabindex="-1" aria-labelledby="trainingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="trainingModalLabel">Training duration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>How long would you like to train?</p>
+                <form id="trainingForm" {# action="{{ path("symfony_training_topics") }}" #} method="GET">
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="duration" id="duration90" value="90" checked/>
+                            <label class="form-check-label" for="duration90">90 minutes</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <p id="durationErrorMessage" class="text-danger" style="display: none;">Please indicate the duration you wish to train for.</p>
+                            <input class="form-check-input" type="radio" name="duration" id="durationOther" value="custom"/>
+                            <label class="form-check-label" for="durationOther">
+                                Other duration (<90 min):
+                                <input type="number" class="form-control mt-2" id="customDuration" name="customDuration" min="1" max="89">
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="nextBtn" data-action="start-training">Next</button>
+            </div>
+        </div>
+    </div>
+</div>

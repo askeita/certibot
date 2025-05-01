@@ -1,0 +1,62 @@
+/**
+ * General styles
+ */
+body {
+    background-image: url('../images/diploma-pattern.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+}
+
+.page-header {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+h2.homepage {
+    opacity: 0.9;
+}
+h2.homepage:hover {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.cert-card {
+    transition: transform 0.3s ease;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.cert-card:hover {
+    transform: translateY(-10px);
+}
+.card-img-top {
+    height: 180px;
+    object-fit: cover;
+}
+
+/**
+ * Results page styles
+ */
+.pagination {
+    margin-top: 30px;
+}
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+.pagination .page-link {
+    color: #0d6efd;
+}
+.result-row {
+    display: none;
+}
+.result-row.visible {
+    display: table-row;
+}
+.badge-correct {
+    background-color: #198754;
+}
+.badge-incorrect {
+    background-color: #dc3545;
+}

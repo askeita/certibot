@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Symfony Certification Quiz{% endblock %}
+
+{% block body %}
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h3>Question {{ questionIndex + 1 }}/{{ totalQuestions }}</h3>
+                    <div class="timer">Time remaining: <span id="timer">{{ timerDuration }}</span>s</div>
+                </div>
+
+                {# Progress bar #}
+                <div class="progress mt-2" style="height: 10px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar"
+                         style="width: {{ progressPercentage }}%;"
+                         aria-valuenow="{{ progressPercentage }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="question-content">
+                    {{ question|raw }}
+                </div>
+                <div class="choices-container">
+                    {{ form_start(form, {'attr': {'id': 'quizForm'}}) }}
+                    <div class="choices-list">
+                        {% set letters = ['A', 'B', 'C', 'D'] %}
+                        {% for key, choice in form.selectChoices %}
+                            <div class="form-check mb-2 d-flex align-items-center">
+                                {{ form_widget(choice, {'label' : false, 'id': 'choice' ~ letters[key], 'value': letters[key], 'name': 'selectedChoices[]'}) }}
+                                <label class="form-check-label ml-2" for="choice{{ letters[key] }}">
+                                    <strong>{{ letters[key] }}.</strong> {{ choice.vars.value }}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {{ form_rest(form) }}
+                    {{ form_end(form) }}
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <a href="#" id="prevButton" class="btn btn-secondary {% if questionIndex == 0 %}disabled{% endif %}"
+                    data-url="{{ path('app_quiz', {'prev': 1, 'version': version}) }}">Previous</a>
+                {% if isLastQuestion %}
+                    <a href="#" id="finishButton" class="btn btn-success" data-url="{{ path('app_quiz_finish', {'version': version}) }}">Complete the quiz</a>
+                {% else %}
+                    <a href="#" id="nextButton" class="btn btn-primary" data-url="{{ path('app_quiz', {'next': 1, 'version': version}) }}">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

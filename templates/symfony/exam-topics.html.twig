@@ -1,0 +1,62 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Symfony {{ version }} Exam Topics{% endblock %}
+
+{% block body %}
+    <div class="container">
+        <div class="row my-4">
+            <div class="col-md-6">
+                <a href="{{ path('app_index') }}" class="btn btn-primary">Back to home</a>
+            </div>
+        </div>
+        <div class="card py-3 px-3 mt-3 exam-topics-card">
+            <h1>Symfony {{ version }} Exam Topics</h1>
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for index, topic in examTopics %}
+                    <div class=training"col">
+                        <div class="card h-100">
+                            <!-- Modal trigger -->
+                            <div class="card-body btn btn-primary" data-bs-toggle="modal"
+                                 data-bs-target="{{ '#exampleModal' ~ index }}">
+                                {{ topic|keys|first }}
+                                {% for key, child in topic %}
+                                    <!-- Modal -->
+                                    <div class="modal fade" id="{{ 'exampleModal' ~ index }}" tabindex="-1"
+                                         aria-labelledby="{{ 'exampleModalLabel_' ~ topic|keys|first ~ '_' ~ key }}"
+                                         aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <div class="modal-title"
+                                                         id="{{ 'exampleModalLabel_ ' ~ topic|keys|first ~ '_' ~ key }}">
+                                                        Modal
+                                                        title
+                                                    </div>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <ul class="list-group">
+                                                        {% for subject in child %}
+                                                            <li class="list-group-item">{{ subject }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">
+                                                        Close
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

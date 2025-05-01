@@ -1,0 +1,18 @@
+<!-- Confirmation modal for fetching exam topics -->
+<div class="modal fade" id="confirmFetchModal" tabindex="-1" aria-labelledby="confirmFetchModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmFetchModalLabel">Missing Exam Topics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>The exam topics for Symfony <span id="versionPlaceholder"></span> are not available. Do you want to fetch them now?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="fetchNoButton" data-bs-dismiss="modal">No</button>
+                <button type="button" class="btn btn-primary" id="fetchYesButton">Yes</button>
+            </div>
+        </div>
+    </div>
+</div>

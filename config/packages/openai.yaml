@@ -1,0 +1,14 @@
+parameters:
+    openai:
+        api_key: '%env(resolve:OPENAI_API_KEY)%'
+        model: gpt-4o
+        temperature: 0.2 # Adjust as needed but keep it below 0.5
+        max_tokens: 400 # Adjust as needed but keep it above 200
+        top_p: 0.1 # Adjust as needed but keep it below 0.3
+        n: 1
+        frequency_penalty: 0
+        presence_penalty: 0
+        stop_sequences:
+        - "\n"
+        - "###"
+        - "```"

@@ -1,0 +1,27 @@
+<!-- Progress modal -->
+<div class="modal fade" id="progressModal" tabindex="-1" aria-labelledby="progressModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalLabel">Retrieval of Exam Topics</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Retrieval of exam topics for Symfony <span id="progressVersionPlaceholder"></span> in progress. Please wait...</p>
+                <div class="progress-circle">
+                    <div class="position-relative" style="width: 150px; height: 150px; margin: 0 auto;">
+                        <div class="position-absolute top-50 start-50 translate-middle">
+                            <span id="progressTime">180</span>s
+                        </div>
+                        <svg width="150" height="150">
+                            <circle cx="75" cy="75" r="65" fill="none" stroke="#e6e6e6" stroke-width="10"/>
+                            <circle cx="75" cy="75" r="65" fill="none" stroke="#007bff" stroke-width="10"
+                                    stroke-dasharray="408" stroke-dashoffset="0" id="progressCircle"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
