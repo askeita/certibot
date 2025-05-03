@@ -41,9 +41,10 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
 5. **Start MongoDB** (if not already running)
    ```bash
    mongod
-   ```
 
-6. **Start the Symfony server**
+6. **Create the `symfony_certification` database**
+
+7. **Start the Symfony server**
    ```bash
    symfony server:start
    ```
@@ -68,7 +69,7 @@ php bin/phpunit
 
 ## Usage Examples
 
-- Access the quiz interface: http://localhost:8000/quiz
+- Access the quiz interface: http://localhost:8000
 - Trigger crawling or MCQ generation via the API or admin interface.
 
 ## Customization
