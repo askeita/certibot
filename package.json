@@ -7,7 +7,7 @@
         "@symfony/stimulus-bundle": "file:vendor/symfony/stimulus-bundle/assets",
         "@symfony/webpack-encore": "^4.6.1",
         "babel-loader": "^8.3.0",
-        "bootstrap": "^5.3.3",
+        "bootstrap": "^5.3.6",
         "core-js": "^3.23.0",
         "file-loader": "^6.2.0",
         "regenerator-runtime": "^0.13.9",
