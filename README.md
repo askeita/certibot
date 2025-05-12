@@ -34,6 +34,10 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
    ```bash
    npm install
    ```
+   and then build the assets:
+      ```bash
+      npm run build
+      ```
 
 4. **Configure environment**
     - Copy `.env` to `.env.local` and adjust variables (especially MongoDB connection).
@@ -80,4 +84,3 @@ php bin/phpunit
 ## License
 
 Open source project under the MIT license.
-```
