@@ -21,7 +21,7 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/certibot.git
+   git clone git@github.com:askeita/certibot.git
    cd certibot
    ```
 
@@ -42,7 +42,7 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
 4. **Configure environment**
     - Copy `.env` to `.env.local` and adjust variables (especially MongoDB connection).
 
-5. **Start MongoDB** (if not already running)
+5. **Start MongoDB service** (if not already running)
    ```bash
    mongod
 
@@ -58,10 +58,10 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
    ```
 
 ## Running Tests
-
-```bash
-php bin/phpunit
-```
+To run the unit tests, ensure you have PHPUnit installed and run:
+   ```bash
+   php bin/phpunit
+   ```
 
 ## Project Structure
 
