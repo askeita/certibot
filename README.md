@@ -93,11 +93,14 @@ To run the unit tests, ensure you have PHPUnit installed and run:
 ### Command Line Interface (CLI)
 Via CLI, you can run the following commands:
    ```bash
-   # Start exploring the documentation
-   php bin/console app:crawl-symfony-docs
+   # Crawl Symfony certification website and exam topics:
+   symfony console app:crawl:symfony-exam-topics
    
-   # Generate Questions: Multiple-choice questions based on explored content
-   php bin/console app:generate-mcq
+   # Crawl Symfony documentation for a specific version and retrieve links and paragraphs related to the exam topics:
+   symfony console app:crawl:symfony-doc
+   
+   # Generate Questions: Multiple-choice questions based on explored content using OpenAI API:
+   symfony console app:reformulate-text-to-mcq
    ```
 
 ### API Usage
