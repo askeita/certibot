@@ -71,12 +71,39 @@ To run the unit tests, ensure you have PHPUnit installed and run:
 - `templates/` : Twig templates
 - `tests/` : Unit tests
 
-## Usage Examples
+## How to Use CertiBot
 
-- Access the quiz interface: http://localhost:8000
-- Trigger crawling or MCQ generation via the API or admin interface.
+### Quiz interface
+1. **Access the application** 
+   - Open your browser and navigate to `http://localhost:8000`.
+   - ***Log in if necessary (Coming soon).***
 
-## Customization
+2. **Start a quiz**
+    - Click on "Train with CertiBot" to begin.
+    - Choose the desired training duration and click "Next".
+    - Select the Symfony version you want to cover and click "Start training".
+    - If your database is empty, the tool will first crawl the list of exam topics on the Symfony certification website. It will then crawl the Symfony documentation for the selected version and retrieve links and paragraphs related to the different topics. Then it will generate Multiple-Choice Questions (MCQs) based on the crawled content using OpenAI API.
+
+3. **View your results**
+    - After completing the quiz, you will see your score and the correct answers.
+    - You can also view the links to the documentation for each question. 
+    - View your attempt history (***Coming soon***).
+    - Identify your strengths and weaknesses by topic (***Coming soon***).
+
+### Command Line Interface (CLI)
+Via CLI, you can run the following commands:
+   ```bash
+   # Start exploring the documentation
+   php bin/console app:crawl-symfony-docs
+   
+   # Generate Questions: Multiple-choice questions based on explored content
+   php bin/console app:generate-mcq
+   ```
+
+### API Usage
+   - ***Coming soon***
+
+## Customization and Contribution
 
 - Edit Twig templates to change the UI.
 - Add new crawlers or question types in `src/Command/`.
