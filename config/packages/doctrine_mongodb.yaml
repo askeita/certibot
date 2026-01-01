@@ -24,10 +24,12 @@ when@prod:
             default:
                 metadata_cache_driver:
                     type: service
-                    id: doctrine_mongodb.system_cache_pool
+                    id: doctrine_mongodb.metadata_cache_pool
 
     framework:
         cache:
             pools:
+                doctrine_mongodb.metadata_cache_pool:
+                    adapter: cache.app
                 doctrine_mongodb.system_cache_pool:
                     adapter: cache.system
