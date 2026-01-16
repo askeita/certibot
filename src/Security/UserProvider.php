@@ -38,11 +38,11 @@ class UserProvider implements UserProviderInterface
     public function loadUserByIdentifier(string $identifier): UserInterface
     {
         // Try to find by username first
-        $user = $this->userRepository->findOneByUsername($identifier);
+        $user = $this->userRepository->findOneBy(['username' => $identifier]);
 
         // If not found, try to find by email
         if (!$user) {
-            $user = $this->userRepository->findOneByemail($identifier);
+            $user = $this->userRepository->findOneBy(['email' => $identifier]);
         }
 
         // If still not found, throw exception

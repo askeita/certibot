@@ -45,31 +45,31 @@
     </head>
     <body>
         <div class="header">
-            <h1>Bienvenue sur Certibot !</h1>
+            <h1>Welcome to Certibot!</h1>
         </div>
         <div class="content">
-            <p>Bonjour <strong>{{ user.username }}</strong>,</p>
+            <p>Hello <strong>{{ user.username }}</strong>,</p>
 
-            <p>Merci de vous être inscrit sur Certibot, votre assistant d'entraînement pour la certification Symfony !</p>
+            <p>Thank you for registering on Certibot, your training assistant for the Symfony certification.</p>
 
-            <p>Pour activer votre compte et commencer à vous entraîner, veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email :</p>
+            <p>To activate your account and start training, please click the button below to verify your email address:</p>
 
             <div style="text-align: center;">
-                <a href="{{ verificationUrl }}" class="button">Vérifier mon email</a>
+                <a href="{{ verificationUrl }}" class="button">Check my email</a>
             </div>
 
-            <p>Si le bouton ne fonctionne pas, vous pouvez copier et coller ce lien dans votre navigateur :</p>
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
             <p style="word-break: break-all; background: #FFF; padding: 10px; border-radius: 5px;">{{ verificationUrl }}</p>
 
-            <p><strong>Note:</strong> Ce lien expirera dans 24 heures pour des raisons de sécurité.</p>
+            <p><strong>Note:</strong> This link will expire in 24 hours for security reasons.</p>
 
-            <p>Si vous n'avez pas créé de compte sur CertiBot, vous pouvez ignorer cet email en toute sécurité.</p>
+            <p>If you have not created an account on CertiBot, you can safely ignore this email.</p>
 
-            <p>A bientôt sur CertiBot !<br/> L'équipe CertiBot.</p>
+            <p>See you soon on CertiBot!<br/> CertiBot Team.</p>
         </div>
         <div class="footer">
-            <p>&copy; {{ 'now'|date('Y') }} CertiBot. Tous droits réservés.</p>
-            <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            <p>&copy; {{ 'now'|date('Y') }} CertiBot. All rights reserved.</p>
+            <p>This email was sent automatically, please do not reply to it.</p>
         </div>
     </body>
 </html>

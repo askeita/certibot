@@ -8,7 +8,7 @@
             <div class="col-md-6">
                 <div class="card shadow">
                     <div class="card-body p-5">
-                        <h1 class="h3 mb-4 text-center">Créer un compte sur CertiBot</h1>
+                        <h1 class="h3 mb-4 text-center">Create an account on CertiBot</h1>
 
                         {% for message in app.flashes('error') %}
                             <div class="alert alert-danger" role="alert">{{ message }}</div>
@@ -20,34 +20,34 @@
 
                         {{ form_start(registrationForm) }}
                         <div class="mb-3">
-                            {{ form_label(registrationForm.username, 'Nom d\'utilisateur',
+                            {{ form_label(registrationForm.username, 'Username',
                                 {'label_attr': {'class': 'form-label'}}) }}
-                            {{ form_widget(registrationForm.username, {'attr': {'class': 'form-control', 'placeholder': 'Choisissez un nom d\'utilisateur'}}) }}
+                            {{ form_widget(registrationForm.username, {'attr': {'class': 'form-control', 'placeholder': 'Choose a username'}}) }}
                             {{ form_errors(registrationForm.username) }}
                         </div>
 
                         <div class="mb-3">
                             {{ form_label(registrationForm.email, 'Email', {'label_attr': {'class': 'form-label'}}) }}
-                            {{ form_widget(registrationForm.email, {'att': {'class': 'form-control', 'placeholder': 'votre@email.com'}}) }}
+                            {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control', 'placeholder': 'your_name@email.com'}}) }}
                             {{ form_errors(registrationForm.email) }}
                         </div>
 
                         <div class="mb-3">
-                            {{ form_label(registrationForm.password.first, 'Mot de passe', {'label_attr': {'class': 'form-label'}}) }}
-                            {{ form_widget(registrationForm.password.first, {'attr': {'class': 'form-control', 'placeholder': 'Minimum 6 caractères'}}) }}
-                            {{ form_errors(registrationForm.password.first) }}
+                            {{ form_label(registrationForm.plainPassword.first, 'Password', {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(registrationForm.plainPassword.first, {'attr': {'class': 'form-control', 'placeholder': 'Minimum 6 characters'}}) }}
+                            {{ form_errors(registrationForm.plainPassword.first) }}
                             <div class="form-text">Minimum 6 caractères.</div>
                         </div>
 
                         <div class="mb-3">
-                            { {{ form_label(registrationForm.password.second, 'Confirmer le mot de passe', {'label_attr': {'class': 'form-label'}}) }}
-                            {{ form_widget(registrationForm.password.second, {'attr': {'class': 'form-control', 'placeholder': 'Confirmez votre mot de passe'}}) }}
-                            {{ form_errors(registrationForm.password.second) }}
+                            {{ form_label(registrationForm.plainPassword.second, 'Confirm password', {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(registrationForm.plainPassword.second, {'attr': {'class': 'form-control', 'placeholder': 'Confirm your password'}}) }}
+                            {{ form_errors(registrationForm.plainPassword.second) }}
                         </div>
 
                         <div class="d-grid gap-2 mt-4">
-                            <button class="btn btn-primary btn-lg">
-                                <i class="fas fa-user-plus"></i> S'inscrire
+                            <button class="btn btn-submit btn-lg">
+                                <i class="fas fa-user-plus"></i> Sign up
                             </button>
                         </div>
                         {{ form_end(registrationForm) }}
@@ -55,9 +55,9 @@
                         <hr class="my-4"/>
 
                         <div class="text-center">
-                            <p class="mb-0">Vous avez déjà un compte ?</p>
+                            <p class="mb-0">Already have an account?</p>
                             <a href="{{ path('app_login') }}" class="btn btn-outline-secondary mt-2">
-                                <i class="fas fa-sign-in-alt"></i> Se connecter
+                                <i class="fas fa-sign-in-alt"></i> Login
                             </a>
                         </div>
                     </div>

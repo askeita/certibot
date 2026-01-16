@@ -8,6 +8,10 @@ body {
     background-position: center;
 }
 
+nav.navbar {
+    background-color: rgb(196, 112, 4) !important;
+}
+
 .page-header {
     background-color: rgba(255, 255, 255, 0.9);
     border-radius: 10px;
@@ -33,6 +37,10 @@ h2.homepage:hover {
 .card-img-top {
     height: 180px;
     object-fit: cover;
+}
+
+.btn-submit {
+    background-color: rgb(255, 145, 0) !important;
 }
 
 /**

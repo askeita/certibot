@@ -49,28 +49,6 @@ class UserRepository extends DocumentRepository implements PasswordUpgraderInter
     }
 
     /**
-     * Find one user by username
-     *
-     * @param string $username
-     * @return User|null
-     */
-    public function findOneByUsername(string $username): ?User
-    {
-        return $this->findOneBy(['username' => $username]);
-    }
-
-    /**
-     * Find one user by email
-     *
-     * @param string $email
-     * @return User|null
-     */
-    public function findOneByEmail(string $email): ?User
-    {
-        return $this->findOneBy(['email' => $email]);
-    }
-
-    /**
      * Save user
      *
      * @param User $user
@@ -83,14 +61,4 @@ class UserRepository extends DocumentRepository implements PasswordUpgraderInter
         $this->getDocumentManager()->flush();
     }
 
-    /**
-     * Find one user by verification token
-     *
-     * @param string $token
-     * @return User|null
-     */
-    public function findOneByVerificationToken(string $token): ?User
-    {
-        return $this->findOneBy(['verificationToken' => $token]);
-    }
 }

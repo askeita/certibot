@@ -3,18 +3,19 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}CertiBot - Entraînement Certification !{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
+        <title>{% block title %}CertiBot - AI-assisted Training to Certifications!{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>🤖</text></svg>">
         {% block stylesheets %}
             {{ encore_entry_link_tags('app') }}
         {% endblock %}
 
         {% block javascripts %}
             {{ encore_entry_script_tags('app') }}
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
         {% endblock %}
     </head>
     <body>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <nav class="navbar navbar-expand-lg navbar-dark mb-4">
             <div class="container-fluid">
                 <a href="{{ path('app_index') }}" class="navbar-brand">
                     <i class="fas fa-robot"></i> CertiBot
@@ -33,12 +34,18 @@
                             </li>
                             <li class="nav-item">
                                 <a href="{{ path('app_logout') }}" class="nav-link">
-                                    <i class="fas fa-sign-in-alt"></i> Connexion
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a href="{{ path('app_login') }}" class="nav-link">
+                                    <i class="fas fa-user-plus"></i> Login
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="{{ path('app_register') }}" class="nav-link">
-                                    <i class="fas fa-user-plus"></i> Inscription
+                                    <i class="fas fa-user-plus"></i> Register
                                 </a>
                             </li>
                         {% endif %}
@@ -62,7 +69,7 @@
         </div>
 
         <footer class="mt-5 py-3 text-center text-muted">
-            <p>&copy; {{ 'now'|date('Y') }}CertiBot - Entraînement pour la certification Symfony</p>
+            <p>&copy; {{ 'now'|date('Y') }} - CertiBot - AI-assisted Training to Certifications</p>
         </footer>
     </body>
 </html>

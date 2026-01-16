@@ -58,7 +58,7 @@ class RegistrationController extends AbstractController
             $userRepository = $this->dm->getRepository(User::class);
 
             // Check if username already exists
-            if ($userRepository->findOneByUsername($user->getUsername())) {
+            if ($userRepository->findOneBy(['username' => $form->get('username')->getData()])) {
                 $this->addFlash('error', 'This username is already taken.');
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),
@@ -66,7 +66,7 @@ class RegistrationController extends AbstractController
             }
 
             // Check if email already exists
-            if ($userRepository->findOneByEmail($user->getEmail())) {
+            if ($userRepository->findOneBy(['email' => $form->get('email')->getData()])) {
                 $this->addFlash('error', 'This email is already registered.');
                 return $this->render('security/register.html.twig', [
                     'registrationForm' => $form->createView(),
@@ -121,7 +121,7 @@ class RegistrationController extends AbstractController
     {
         /** @var UserRepository $userRepository */
         $userRepository = $this->dm->getRepository(User::class);
-        $user = $userRepository->findOneByVerificationToken($token);
+        $user = $userRepository->findOneBy(['verificationToken' => $token]);
 
         if (!$user) {
             $this->addFlash('error', 'Invalid verification token.');
