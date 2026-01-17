@@ -2,18 +2,74 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text></svg>">
-        {# Run `composer require symfony/webpack-encore-bundle` to start using Symfony UX #}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}CertiBot - AI-assisted Training to Certifications!{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>🤖</text></svg>">
         {% block stylesheets %}
             {{ encore_entry_link_tags('app') }}
         {% endblock %}
 
         {% block javascripts %}
             {{ encore_entry_script_tags('app') }}
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
         {% endblock %}
     </head>
     <body>
-        {% block body %}{% endblock %}
+        <nav class="navbar navbar-expand-lg navbar-dark mb-4">
+            <div class="container-fluid">
+                <a href="{{ path('app_index') }}" class="navbar-brand">
+                    <i class="fas fa-robot"></i> CertiBot
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div id="navbarNav" class="collapse navbar-collapse">
+                    <ul class="navbar-nav ms-auto">
+                        {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="fas fa-user"></i> {{ app.user.username }}
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('app_logout') }}" class="nav-link">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item">
+                                <a href="{{ path('app_login') }}" class="nav-link">
+                                    <i class="fas fa-user-plus"></i> Login
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ path('app_register') }}" class="nav-link">
+                                    <i class="fas fa-user-plus"></i> Register
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container">
+            {% for label, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ label == 'error' ? 'danger' : label }} alert-dismissible fade show"
+                         role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {% block body %}{% endblock %}
+        </div>
+
+        <footer class="mt-5 py-3 text-center text-muted">
+            <p>&copy; {{ 'now'|date('Y') }} - CertiBot - AI-assisted Training to Certifications</p>
+        </footer>
     </body>
 </html>

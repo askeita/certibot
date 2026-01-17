@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription - CertiBot{% endblock %}
+
+{% block body %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-body p-5">
+                        <h1 class="h3 mb-4 text-center">Create an account on CertiBot</h1>
+
+                        {% for message in app.flashes('error') %}
+                            <div class="alert alert-danger" role="alert">{{ message }}</div>
+                        {% endfor %}
+
+                        {% for message in app.flashes('warning') %}
+                            <div class="alert alert-warning">{{ message }}</div>
+                        {% endfor %}
+
+                        {{ form_start(registrationForm) }}
+                        <div class="mb-3">
+                            {{ form_label(registrationForm.username, 'Username',
+                                {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(registrationForm.username, {'attr': {'class': 'form-control', 'placeholder': 'Choose a username'}}) }}
+                            {{ form_errors(registrationForm.username) }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form_label(registrationForm.email, 'Email', {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(registrationForm.email, {'attr': {'class': 'form-control', 'placeholder': 'your_name@email.com'}}) }}
+                            {{ form_errors(registrationForm.email) }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form_label(registrationForm.plainPassword.first, 'Password', {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(registrationForm.plainPassword.first, {'attr': {'class': 'form-control', 'placeholder': 'Minimum 6 characters'}}) }}
+                            {{ form_errors(registrationForm.plainPassword.first) }}
+                            <div class="form-text">Minimum 6 caractères.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form_label(registrationForm.plainPassword.second, 'Confirm password', {'label_attr': {'class': 'form-label'}}) }}
+                            {{ form_widget(registrationForm.plainPassword.second, {'attr': {'class': 'form-control', 'placeholder': 'Confirm your password'}}) }}
+                            {{ form_errors(registrationForm.plainPassword.second) }}
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button class="btn btn-submit btn-lg">
+                                <i class="fas fa-user-plus"></i> Sign up
+                            </button>
+                        </div>
+                        {{ form_end(registrationForm) }}
+
+                        <hr class="my-4"/>
+
+                        <div class="text-center">
+                            <p class="mb-0">Already have an account?</p>
+                            <a href="{{ path('app_login') }}" class="btn btn-outline-secondary mt-2">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

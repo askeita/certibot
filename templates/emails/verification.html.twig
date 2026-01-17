@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .header {
+                background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+                color: white;
+                padding: 30px;
+                text-align: center;
+                border-radius: 10px 0;
+            }
+            .content {
+                background: #F9F9F9;
+                padding: 30px;
+                border-radius: 0 10px;
+            }
+            .button {
+                display: inline-block;
+                padding: 15px 30px;
+                background: #667EEA;
+                color: #FFF;
+                text-decoration: none;
+                border-radius: 5px;
+                margin: 20px 0;
+                font-weight: bold;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 30px;
+                font-size: 12px;
+                color: #666;
+            }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Welcome to Certibot!</h1>
+        </div>
+        <div class="content">
+            <p>Hello <strong>{{ user.username }}</strong>,</p>
+
+            <p>Thank you for registering on Certibot, your training assistant for the Symfony certification.</p>
+
+            <p>To activate your account and start training, please click the button below to verify your email address:</p>
+
+            <div style="text-align: center;">
+                <a href="{{ verificationUrl }}" class="button">Check my email</a>
+            </div>
+
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; background: #FFF; padding: 10px; border-radius: 5px;">{{ verificationUrl }}</p>
+
+            <p><strong>Note:</strong> This link will expire in 24 hours for security reasons.</p>
+
+            <p>If you have not created an account on CertiBot, you can safely ignore this email.</p>
+
+            <p>See you soon on CertiBot!<br/> CertiBot Team.</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{ 'now'|date('Y') }} CertiBot. All rights reserved.</p>
+            <p>This email was sent automatically, please do not reply to it.</p>
+        </div>
+    </body>
+</html>

@@ -4,11 +4,12 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
 
 ## Features
 
+- **User Authentication** with registration, login, and email verification.
 - **Crawling** Symfony documentation and exam topics.
 - **Automatic MCQ generation** from text.
 - **Interactive quiz** interface for Symfony certification training.
 - **API** to trigger crawling and MCQ generation commands.
-- **MongoDB storage** for questions and results.
+- **MongoDB storage** for questions, results, and user data.
 
 ## Requirements
 
@@ -41,6 +42,11 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
 
 4. **Configure environment**
     - Copy `.env` to `.env.local` and adjust variables (especially MongoDB connection).
+    - Configure mailer settings for email verification:
+      ```env
+      MAILER_DSN=smtp://user:password@localhost:1025
+      ```
+      For development, you can use a tool like [MailHog](https://github.com/mailhog/MailHog) or [Mailtrap](https://mailtrap.io/).
 
 5. **Start MongoDB service** (if not already running)
    ```bash
@@ -73,10 +79,33 @@ To run the unit tests, ensure you have PHPUnit installed and run:
 
 ## How to Use CertiBot
 
+### Authentication
+The application features a complete authentication system:
+
+1. **Registration**
+   - Navigate to `/register` to create a new account.
+   - Fill in your username, email, password, and password confirmation.
+   - Upon successful registration, a verification email will be sent to your email address.
+
+2. **Email Verification**
+   - Check your email inbox for a verification message from CertiBot.
+   - Click the verification link to activate your account.
+   - Once verified, you can log in to the application.
+
+3. **Login**
+   - Navigate to `/login` to access your account.
+   - Enter your username and password.
+   - Use the "Remember me" option to stay logged in for up to one week.
+
+4. **Logout**
+   - Click the logout button to end your session.
+
 ### Quiz interface
 1. **Access the application** 
    - Open your browser and navigate to `http://localhost:8000`.
-   - ***Log in if necessary (Coming soon).***
+   - **Register a new account** at `http://localhost:8000/register` if you don't have one yet.
+   - **Verify your email** by clicking the link sent to your email address.
+   - **Log in** at `http://localhost:8000/login` with your credentials.
 
 2. **Start a quiz**
     - Click on "Train with CertiBot" to begin.
