@@ -7,12 +7,6 @@ services:
       - "27017"
 ###< doctrine/mongodb-odm-bundle ###
 
-###> doctrine/doctrine-bundle ###
-  database:
-    ports:
-      - "5432"
-###< doctrine/doctrine-bundle ###
-
 ###> symfony/mailer ###
   mailer:
     image: axllent/mailpit
