@@ -42,13 +42,19 @@ services:
 
     App\Command\CrawlSymfonyExamTopicsCommand:
         arguments:
-            $chromeDriverPath: '%env(CHROME_DRIVER_PATH)%'
             $mongoDbUrl: '%env(MONGODB_URL)%'
+            $browser: '%env(BROWSER)%'
+            $chromeDriverPath: '%env(CHROME_DRIVER_PATH)%'
+            $geckoDriverPath: '%env(GECKO_DRIVER_PATH)%'
+            $edgeDriverPath: '%env(EDGE_DRIVER_PATH)%'
 
     App\Command\CrawlSymfonyDocCommand:
         arguments:
-            $chromeDriverPath: '%env(CHROME_DRIVER_PATH)%'
             $mongoDbUrl: '%env(MONGODB_URL)%'
+            $browser: '%env(BROWSER)%'
+            $chromeDriverPath: '%env(CHROME_DRIVER_PATH)%'
+            $geckoDriverPath: '%env(GECKO_DRIVER_PATH)%'
+            $edgeDriverPath: '%env(EDGE_DRIVER_PATH)%'
 
     App\Command\ReformulateTextToMcqCommand:
         arguments:
