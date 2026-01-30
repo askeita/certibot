@@ -2,6 +2,9 @@
 
 CertiBot is a Symfony application for generating, crawling, and reformulating multiple-choice questions (MCQs) from Symfony documentation, with storage in MongoDB.
 
+> **Note on browsers:**
+> The crawling commands use [Symfony Panther](https://github.com/symfony/panther) under the hood and require a WebDriver (ChromeDriver, GeckoDriver, or EdgeDriver). **Google Chrome is the default and recommended browser** for this project. If you want to use Firefox or Edge instead, see `BROWSER_CONFIGURATION.md` for detailed instructions.
+
 ## Features
 
 - **User Authentication** with registration, login, and email verification.
@@ -17,6 +20,9 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
 - [Composer](https://getcomposer.org/)
 - [Node.js](https://nodejs.org/) and npm (for JS assets)
 - [MongoDB](https://www.mongodb.com/)
+- A supported browser + WebDriver for crawling:
+  - **Recommended:** Google Chrome + ChromeDriver
+  - Optional: Firefox + GeckoDriver, or Microsoft Edge + EdgeDriver
 
 ## Installation
 
