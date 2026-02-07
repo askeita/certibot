@@ -3,9 +3,10 @@
 namespace App\Command;
 
 use App\Repository\MongoDBQueryBuilder;
+use App\Service\BrowserClientService;
 use Exception;
 use InvalidArgumentException;
-use MongoDB\Client as MongoClient;
+use MongoDB\Client as MongoDBClient;
 use OpenAI;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -14,7 +15,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Panther\Client as Client;
 
 
 /**
@@ -58,20 +58,20 @@ class ReformulateTextToMcqCommand extends Command
      */
     private mixed $nValue;
 
-
     /**
      * Constructor
      *
      * @param LoggerInterface $logger
      * @param string $mongoDbUrl
      * @param array $openAIConfig
-     * @param string $chromeDriverPath
+     * @param BrowserClientService $browserClientService
      */
-    public function __construct(LoggerInterface $logger,
-                                private readonly string $mongoDbUrl,
-                                array $openAIConfig,
-                                private readonly string $chromeDriverPath)
-    {
+    public function __construct(
+        LoggerInterface $logger,
+        private readonly string $mongoDbUrl,
+        array $openAIConfig,
+        private readonly BrowserClientService $browserClientService
+    ) {
         parent::__construct();
         $this->logger = $logger;
         $this->openAIApiKey = $openAIConfig['api_key'] ?? '';
@@ -153,8 +153,8 @@ class ReformulateTextToMcqCommand extends Command
     {
         $argVersion = $input->getArgument('version');
         $version = (int)trim($argVersion);
-        if (!ctype_digit($argVersion) || $version < 3 || $version > 7) {
-            $message = "Invalid Symfony version. Please provide a number between 3 and 7.";
+        if (!ctype_digit($argVersion) || $version < 6 || $version > 8) {
+            $message = "Invalid Symfony version. Please provide an integer between 6 and 8.";
             $this->logger->warning($message);
             $io->error($message);
             throw new InvalidArgumentException($message);
@@ -172,7 +172,7 @@ class ReformulateTextToMcqCommand extends Command
      */
     private function fetchLinksFromDatabase(int $version, SymfonyStyle $io): array
     {
-        $queryBuilder = (new MongoDBQueryBuilder($this->mongoDbUrl, "symfony_certification"))
+        $queryBuilder = new MongoDBQueryBuilder($this->mongoDbUrl, "symfony_certification")
             ->selectCollection("sf{$version}_topics_links");
         $linksCollection = json_decode(json_encode(
             $queryBuilder
@@ -253,11 +253,7 @@ class ReformulateTextToMcqCommand extends Command
 
         $this->logger->debug("Processing link: " . $link);
         // Fetch the content of the links
-        $client = Client::createChromeClient($this->chromeDriverPath, [
-            '--headless',
-            '--disable-dev-shm-usage',
-            '--no-sandbox'
-        ]);
+        $client = $this->browserClientService->createClient();
         $crawler = $client->request("GET", $link);
         $class = substr_count($link, '#') > 1 ? 'section' : '';
 
@@ -360,14 +356,14 @@ class ReformulateTextToMcqCommand extends Command
      */
     private function saveQuestionsToDatabase(int $version, array $questions): void
     {
-        $mongoClient = new MongoClient($this->mongoDbUrl, [], []);
+        $mongoClient = new MongoDBClient($this->mongoDbUrl, [], []);
         $collection = $mongoClient->selectCollection("symfony_certification", "sf{$version}_mcq_gpt-4o");
         $collection->drop();
 
         $collection->insertOne([
             "version" => "Symfony $version",
             "mcq" => $questions,
-            "scraped_at" => (new \DateTime())->format("Y-m-d H:i:s"),
+            "scraped_at" => new \DateTime()->format("Y-m-d H:i:s"),
         ]);
     }
 

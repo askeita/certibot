@@ -20,13 +20,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listener for the "90min" duration option
     const duration90 = document.getElementById('duration90');
     const durationErrorMessage = document.getElementById('durationErrorMessage');
-    duration90?.addEventListener('click', function(e) {
+    duration90?.addEventListener('click', function() {
         durationErrorMessage.style.display = 'none';
     })
 
     // Event listener for the "custom" duration option
     const customDuration = document.getElementById('customDuration');
-    customDuration?.addEventListener('click', function(e) {
+    customDuration?.addEventListener('click', function() {
         durationErrorMessage.style.display = 'none';
     })
 

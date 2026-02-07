@@ -27,11 +27,25 @@
             </div>
             <div class="card-body">
                 <ul id="progressSteps" class="list-group list-group-flush"></ul>
-                <div class="text-center mt-4">
+
+                <!-- Progress spinner and timer -->
+                <div id="progressSpinner" class="text-center mt-4">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <span class="mt-2">Elapsed time:></span><span id="timer">0:00</span>
+                    <span class="mt-2">Elapsed time: </span><span id="timer">0:00</span>
+                </div>
+
+                <!-- Error alert section (hidden by default) -->
+                <div id="errorAlert" class="alert alert-danger mt-4 d-none" role="alert">
+                    <h5 class="alert-heading">Error occurred!</h5>
+                    <p id="errorMessage" class="mb-3">An unexpected error occurred while processing your request.</p>
+                    <hr>
+                    <div class="text-center">
+                        <a href="{{ path('app_index') }}" class="btn btn-primary">
+                            <i class="fas fa-home me-2"></i>Return to Home Page
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

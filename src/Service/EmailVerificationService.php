@@ -3,7 +3,9 @@
 namespace App\Service;
 
 use App\Document\User;
+use Random\RandomException;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
 
@@ -28,10 +30,11 @@ class EmailVerificationService
 
     /**
      * Send verification email
+     * @throws TransportExceptionInterface
      */
     public function sendVerificationEmail(User $user, string $verificationUrl): void
     {
-        $email = (new TemplatedEmail())
+        $email = new TemplatedEmail()
             ->from(new Address($this->fromEmail, 'CertiBot'))
             ->to(new Address($user->getEmail(), $user->getUsername()))
             ->subject('Please verify your email address')
@@ -46,6 +49,8 @@ class EmailVerificationService
 
     /**
      * Generate a unique verification token
+     *
+     * @throws RandomException
      */
     public function generateVerificationToken(): string
     {

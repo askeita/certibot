@@ -6,9 +6,7 @@ security:
 
     providers:
         app_user_provider:
-            mongodb:
-                class: App\Document\User
-                property: username
+            id: App\Security\UserProvider
 
     firewalls:
         dev:
@@ -17,6 +15,7 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            user_checker: App\Security\UserChecker
             form_login:
                 login_path: app_login
                 check_path: app_login
@@ -35,6 +34,16 @@ security:
       - { path: ^/login, roles: PUBLIC_ACCESS }
       - { path: ^/register, roles: PUBLIC_ACCESS }
       - { path: ^/verify, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/check-exam-topics, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/check-topics-links, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/check-mcq-collection, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/execute-crawl-topics-command, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/execute-crawl-doc-command, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/execute-mcq-command, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/exam-topics, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/quiz, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/fetch-doc, roles: PUBLIC_ACCESS }
+      - { path: ^/symfony/\d+/results, roles: PUBLIC_ACCESS }
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
 

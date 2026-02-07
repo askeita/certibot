@@ -46,8 +46,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const action = this.getAttribute('data-action');
         // Check if exam topics are available for the selected version
-        fetch(`/symfony/${parseInt(selectedVersion, 10)}/check-exam-topics`)
-            .then(response => response.json())
+        fetch(`/symfony/${parseInt(selectedVersion, 10)}/check-exam-topics`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.exists) {
                     if (action === 'exam-topics') {
@@ -60,7 +73,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             })
             .catch(error => {
-                console.error('There was a problem with the fetch operation: ' + error);
+                console.error('Error checking exam topics:', error);
+                // Fallback: redirect directly to exam-topics page to let the server handle it
+                if (action === 'exam-topics') {
+                    window.location.href = `/symfony/${parseInt(selectedVersion, 10)}/exam-topics`;
+                }
             });
     })
 
@@ -92,8 +109,21 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
 
         // Fetch the command to crawl exam topics for the selected version
-        fetch(`/symfony/${parseInt(version, 10)}/execute-crawl-topics-command`)
-            .then(response => response.json())
+        fetch(`/symfony/${parseInt(version, 10)}/execute-crawl-topics-command`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 clearInterval(timer);
                 progressModal.hide();
@@ -101,14 +131,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.success) {
                     window.location.href = `/symfony/${parseInt(version, 10)}/exam-topics`;
                 } else {
-                    alert('An error occurred while retrieving the exam topics.');
+                    alert('An error occurred while retrieving the exam topics: ' + (data.error || 'Unknown error'));
                     versionModal.show();
                 }
             })
             .catch(error => {
                 clearInterval(timer);
                 progressModal.hide();
-                console.error('There was a problem with the fetch operation: ' + error);
+                console.error('Error executing crawl command:', error);
+                alert('Network error. Please check your connection and try again.');
                 versionModal.show();
             });
     })

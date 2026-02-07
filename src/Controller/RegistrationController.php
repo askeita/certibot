@@ -7,9 +7,11 @@ use App\Form\RegistrationFormType;
 use App\Repository\UserRepository;
 use App\Service\EmailVerificationService;
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Doctrine\ODM\MongoDB\MongoDBException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -39,7 +41,9 @@ class RegistrationController extends AbstractController
     }
 
     /**
-     * Register
+     * Register user
+     *
+     * @throws TransportExceptionInterface
      */
     #[Route('/register', name: 'app_register')]
     public function register(Request $request): Response
@@ -88,7 +92,11 @@ class RegistrationController extends AbstractController
 
             // Save user
             $this->dm->persist($user);
-            $this->dm->flush();
+            try {
+                $this->dm->flush();
+            } catch (MongoDBException|\Throwable $e) {
+                throw new \RuntimeException('An error occurred while saving the user: ' . $e->getMessage());
+            }
 
             // Generate verification URL
             $verificationUrl = $this->generateUrl(
@@ -102,7 +110,8 @@ class RegistrationController extends AbstractController
                 $this->emailVerificationService->sendVerificationEmail($user, $verificationUrl);
                 $this->addFlash('success', 'Registration successful! Please check your email to verify your account.');
             } catch (\Exception $e) {
-                $this->addFlash('warning', 'Registration successful! However, we could not send the verification email. Please contact support.');
+                $this->addFlash('warning', 'Registration successful! However, we could not send the ' .
+                'verification email. Please contact support. Error: ' . $e->getMessage());
             }
 
             return $this->redirectToRoute('app_login');
@@ -114,7 +123,9 @@ class RegistrationController extends AbstractController
     }
 
     /**
-     * Verify Email
+     * Verify email
+     *
+     * @param string $token verification token from the email
      */
     #[Route('/verify/email/{token}', name: 'app_verify_email')]
     public function verifyEmail(string $token): Response
@@ -137,7 +148,13 @@ class RegistrationController extends AbstractController
         $user->setIsVerified(true);
         $user->setVerificationToken(null);
         $this->dm->persist($user);
-        $this->dm->flush();
+        try {
+            $this->dm->flush();
+        } catch (MongoDBException $e) {
+            throw new \RuntimeException('An error occurred while verifying the email: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            throw new \RuntimeException('An unexpected error occurred while verifying the email: ' . $e->getMessage());
+        }
 
         $this->addFlash('success', 'Your email has been verified successfully! You can now log in.');
         return $this->redirectToRoute('app_login');
