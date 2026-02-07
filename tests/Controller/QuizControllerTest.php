@@ -21,6 +21,8 @@ class QuizControllerTest extends WebTestCase
      */
     private QuizController $quizController;
 
+    private SessionInterface $sessionMock;
+
     /**
      * Sets up the test environment
      *

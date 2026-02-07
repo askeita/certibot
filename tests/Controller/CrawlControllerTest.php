@@ -19,6 +19,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class CrawlControllerTest extends WebTestCase
 {
+    private ContainerInterface $mockContainer;
+
     /**
      * Set up the test environment
      *
@@ -55,7 +57,7 @@ class CrawlControllerTest extends WebTestCase
             ->willReturn(Command::SUCCESS);
 
         $controller = $this->createController();
-        $response = $controller->executeCrawlTopicsCommand(5, $mockCommand);
+        $response = $controller->executeCrawlTopicsCommand(6, $mockCommand);
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertJsonStringEqualsJsonString(
@@ -78,7 +80,7 @@ class CrawlControllerTest extends WebTestCase
             ->willReturn(Command::FAILURE);
 
         $controller = $this->createController();
-        $response = $controller->executeCrawlTopicsCommand(5, $mockCommand);
+        $response = $controller->executeCrawlTopicsCommand(6, $mockCommand);
 
         $this->assertEquals(500, $response->getStatusCode());
         $this->assertStringContainsString(
@@ -101,7 +103,7 @@ class CrawlControllerTest extends WebTestCase
             ->willThrowException(new \Exception('Test exception'));
 
         $controller = $this->createController();
-        $response = $controller->executeCrawlTopicsCommand(5, $mockCommand);
+        $response = $controller->executeCrawlTopicsCommand(6, $mockCommand);
 
         $this->assertEquals(500, $response->getStatusCode());
         $this->assertStringContainsString(
@@ -124,7 +126,7 @@ class CrawlControllerTest extends WebTestCase
             ->willReturn(Command::SUCCESS);
 
         $controller = $this->createController();
-        $response = $controller->executeCrawlDocCommand(5, $mockCommand);
+        $response = $controller->executeCrawlDocCommand(6, $mockCommand);
 
         $this->assertEquals(200, $response->getStatusCode());
         $this->assertJsonStringEqualsJsonString(
@@ -147,7 +149,7 @@ class CrawlControllerTest extends WebTestCase
             ->willReturn(Command::FAILURE);
 
         $controller = $this->createController();
-        $response = $controller->executeCrawlDocCommand(5, $mockCommand);
+        $response = $controller->executeCrawlDocCommand(6, $mockCommand);
 
         $this->assertEquals(500, $response->getStatusCode());
         $this->assertStringContainsString(
@@ -170,7 +172,7 @@ class CrawlControllerTest extends WebTestCase
             ->willThrowException(new \Exception('Test exception'));
 
         $controller = $this->createController();
-        $response = $controller->executeCrawlDocCommand(5, $mockCommand);
+        $response = $controller->executeCrawlDocCommand(6, $mockCommand);
 
         $this->assertEquals(500, $response->getStatusCode());
         $this->assertStringContainsString(
@@ -196,7 +198,7 @@ class CrawlControllerTest extends WebTestCase
 
         $this->assertEquals(400, $response->getStatusCode());
         $this->assertStringContainsString(
-            json_encode(["error" => "The version must be a number between 3 and 7."]),
+            json_encode(["error" => "The version must be an integer between 6 and 8."]),
             $response->getContent()
         );
     }
@@ -218,7 +220,7 @@ class CrawlControllerTest extends WebTestCase
 
         $this->assertEquals(400, $response->getStatusCode());
         $this->assertStringContainsString(
-            json_encode(["error" => "The version must be a number between 3 and 7."]),
+            json_encode(["error" => "The version must be an integer between 6 and 8."]),
             $response->getContent()
         );
     }
@@ -237,7 +239,7 @@ class CrawlControllerTest extends WebTestCase
             ->willReturn(Command::SUCCESS);
 
         $controller = $this->createController();
-        $response = $controller->executeMcqCommand(5, $mockCommand);
+        $response = $controller->executeMcqCommand(6, $mockCommand);
 
         //$this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertEquals(200, $response->getStatusCode());
@@ -261,7 +263,7 @@ class CrawlControllerTest extends WebTestCase
             ->willReturn(Command::FAILURE);
 
         $controller = $this->createController();
-        $response = $controller->executeMcqCommand(5, $mockCommand);
+        $response = $controller->executeMcqCommand(6, $mockCommand);
 
         $this->assertEquals(500, $response->getStatusCode());
         $this->assertStringContainsString(
@@ -284,7 +286,7 @@ class CrawlControllerTest extends WebTestCase
             ->willThrowException(new \Exception('Test exception'));
 
         $controller = $this->createController();
-        $response = $controller->executeMcqCommand(5, $mockCommand);
+        $response = $controller->executeMcqCommand(6, $mockCommand);
 
         $this->assertEquals(500, $response->getStatusCode());
         $this->assertStringContainsString(
@@ -310,7 +312,7 @@ class CrawlControllerTest extends WebTestCase
 
         $this->assertEquals(400, $response->getStatusCode());
         $this->assertStringContainsString(
-            json_encode(["error" => "The version must be a number between 3 and 7."]),
+            json_encode(["error" => "The version must be an integer between 6 and 8."]),
             $response->getContent()
         );
     }
