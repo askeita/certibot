@@ -14,6 +14,11 @@ use function PHPUnit\Framework\never;
  */
 class MongoDBQueryBuilderTest extends TestCase
 {
+    private \MongoDB\Client $mockClient;
+    private \MongoDB\Database $mockDatabase;
+    private \MongoDB\Collection $mockCollection;
+    private \App\Repository\MongoDBQueryBuilder $queryBuilder;
+
     /**
      * Sets up the test environment
      *

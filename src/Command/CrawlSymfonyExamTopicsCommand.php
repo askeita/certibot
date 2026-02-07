@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Service\BrowserClientService;
 use Exception;
 use Facebook\WebDriver\Exception\NoSuchElementException;
 use Facebook\WebDriver\Exception\TimeoutException;
@@ -12,7 +13,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Panther\Client;
 use MongoDB\Client as MongoClient;
 
 
@@ -30,20 +30,19 @@ class CrawlSymfonyExamTopicsCommand extends Command
      */
     private LoggerInterface $logger;
 
-
     /**
      * Constructor
      *
      * @param LoggerInterface $logger
      * @param string $mongoDbUrl
-     * @param string $chromeDriverPath
+     * @param BrowserClientService $browserClientService
      */
-    public function __construct(LoggerInterface         $logger,
-                                private readonly string $mongoDbUrl,
-                                private readonly string $chromeDriverPath)
-    {
+    public function __construct(
+        LoggerInterface $logger,
+        private readonly string $mongoDbUrl,
+        private readonly BrowserClientService $browserClientService,
+    ) {
         parent::__construct();
-
         $this->logger = $logger;
     }
 
@@ -85,7 +84,7 @@ class CrawlSymfonyExamTopicsCommand extends Command
             }
 
             return Command::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error("Element not found: " . $e->getMessage());
             $io->error("An element was not found on the page. Please restart and eventually check the page structure.");
 
@@ -104,15 +103,14 @@ class CrawlSymfonyExamTopicsCommand extends Command
     {
         $version = (int) trim($argVersion);
 
-        if (!ctype_digit($argVersion) || $version < 3 || $version > 7) {
-            $io->error("Invalid Symfony version. Please provide a number between 3 and 7.");
+        if (!ctype_digit($argVersion) || $version < 6 || $version > 8) {
+            $io->error("Invalid Symfony version. Please provide an integer between 6 and 8.");
 
             return Command::FAILURE;
         }
 
         return $version;
     }
-
 
     /**
      * Crawls the Symfony certification website for exam topics.
@@ -123,17 +121,13 @@ class CrawlSymfonyExamTopicsCommand extends Command
      */
     private function crawlExamTopics(int $version): array|int
     {
-        if (empty($this->chromeDriverPath)) {
-            $this->logger->error("ChromeDriver path is not set. Please configure the 'CHROMEDRIVER_PATH' environment variable.");
+        if (empty($this->mongoDbUrl)) {
+            $this->logger->error("MongoDB URL is not set. Please configure the 'MONGODB_URL' environment variable.");
 
             return Command::FAILURE;
         }
 
-        $client = Client::createChromeClient($this->chromeDriverPath, [
-            '--headless',
-            '--no-sandbox',
-            '--disable-dev-shm-usage'
-        ]);
+        $client = $this->browserClientService->createClient();
         $crawler = $client->request("GET", "https://certification.symfony.com/exams/symfony.html");
 
         try {
@@ -176,7 +170,7 @@ class CrawlSymfonyExamTopicsCommand extends Command
         $collection->insertOne([
             "version" => "Symfony $version",
             "topics" => $topics,
-            "scraped_at" => (new \DateTime())->format("Y-m-d H:i:s"),
+            "scraped_at" => new \DateTime()->format("Y-m-d H:i:s"),
         ]);
     }
 

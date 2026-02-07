@@ -18,9 +18,9 @@ class EmailService
      * Constructor
      */
     public function __construct(
-        private MailerInterface $mailer,
-        private string $fromEmail = 'noreply@certibot.com',
-        private string $fromName = 'CertiBot'
+        private readonly MailerInterface $mailer,
+        private readonly string $fromEmail = 'noreply@certibot.com',
+        private readonly string $fromName = 'CertiBot'
     ) {
     }
 

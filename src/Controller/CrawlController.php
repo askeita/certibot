@@ -26,17 +26,17 @@ class CrawlController extends AbstractController
     /**
      * Executes CrawlSymfonyExamTopicsCommand
      *
- * @param int $version                                              Symfony version
-     * @param CrawlSymfonyExamTopicsCommand $crawlTopicsCommand     Crawl command for Symfony exam topics
-     * @return JsonResponse                                         JSON response with a command execution result
-     * @throws ExceptionInterface                                   ExceptionInterface
+     * @param int $version  Symfony version
+     * @param CrawlSymfonyExamTopicsCommand $crawlTopicsCommand Crawl command for Symfony exam topics
+     * @return JsonResponse         JSON response with a command execution result
+     * @throws ExceptionInterface   ExceptionInterface
      */
     #[Route('/{version}/execute-crawl-topics-command', name: 'app_execute_crawl_topics_command', methods: ['GET'])]
     public function executeCrawlTopicsCommand(int $version, CrawlSymfonyExamTopicsCommand $crawlTopicsCommand): JsonResponse
     {
-        if ($version < 3 || $version > 7) {
+        if ($version < 6 || $version > 8) {
             return $this->json(
-                ['error' => 'The version must be a number between 3 and 7.'],
+                ['error' => 'The version must be an integer between 6 and 8.'],
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -73,9 +73,9 @@ class CrawlController extends AbstractController
     #[Route('/{version}/execute-crawl-doc-command', name: 'app_execute_crawl_doc_command', methods: ['GET'])]
     public function executeCrawlDocCommand(int $version, CrawlSymfonyDocCommand $crawlDocCommand): JsonResponse
     {
-        if ($version < 3 || $version > 7) {
+        if ($version < 6 || $version > 8) {
             return $this->json(
-                ['error' => 'The version must be a number between 3 and 7.'],
+                ['error' => 'The version must be an integer between 6 and 8.'],
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -112,9 +112,9 @@ class CrawlController extends AbstractController
     #[Route('/{version}/execute-mcq-command', name: 'app_execute_mcq_command', methods: ['GET'])]
     public function executeMcqCommand(int $version, ReformulateTextToMcqCommand $mcqCommand): JsonResponse
     {
-        if ($version < 3 || $version > 7) {
+        if ($version < 6 || $version > 8) {
             return $this->json(
-                ['error' => 'The version must be a number between 3 and 7.'],
+                ['error' => 'The version must be an integer between 6 and 8.'],
                 Response::HTTP_BAD_REQUEST
             );
         }

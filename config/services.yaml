@@ -40,20 +40,26 @@ services:
             $url: '%env(MONGODB_URL)%'
             $databaseName: '%env(MONGODB_DB)%'
 
+    App\Service\BrowserClientService:
+        arguments:
+            $browser: '%env(BROWSER)%'
+            $chromeDriverPath: '%env(CHROME_DRIVER_PATH)%'
+            $geckoDriverPath: '%env(GECKO_DRIVER_PATH)%'
+            $edgeDriverPath: '%env(EDGE_DRIVER_PATH)%'
+
     App\Command\CrawlSymfonyExamTopicsCommand:
         arguments:
-            $chromeDriverPath: '%env(CHROME_DRIVER_PATH)%'
             $mongoDbUrl: '%env(MONGODB_URL)%'
 
     App\Command\CrawlSymfonyDocCommand:
         arguments:
-            $chromeDriverPath: '%env(CHROME_DRIVER_PATH)%'
             $mongoDbUrl: '%env(MONGODB_URL)%'
 
     App\Command\ReformulateTextToMcqCommand:
         arguments:
-            $chromeDriverPath: '%env(CHROME_DRIVER_PATH)%'
             $mongoDbUrl: '%env(MONGODB_URL)%'
             $openAIConfig: '%openai%'
         tags:
             - { name: 'console.command', command: 'app:reformulate-text-to-mcq' }
+
+    App\Security\UserChecker: ~

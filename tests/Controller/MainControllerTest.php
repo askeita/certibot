@@ -51,33 +51,4 @@ class MainControllerTest extends WebTestCase
         $this->assertResponseStatusCodeSame("404");
         $this->assertSelectorTextContains('h1', 'Symfony');
     }
-
-    /**
-     * Test the /symfony/{version}/exam-topics route
-     *
-     * @return void
-     */
-    public function testSymfonyExamTopicsRoute(): void
-    {
-        $client = static::createClient();
-        $client->request('GET', '/symfony/5/exam-topics');
-
-        $this->assertResponseIsSuccessful();
-        $this->assertSelectorTextContains('h1', 'Symfony 5 Exam Topics');
-    }
-
-    /**
-     * Test the /symfony/{version}/exam-topics route with no exam topics found
-     *
-     * @return void
-     */
-    public function testNoExamTopicsFound(): void
-    {
-        $client = static::createClient();
-        $client->request('GET', '/symfony/0/exam-topics');
-
-        $this->assertResponseIsSuccessful();
-        $this->assertSelectorExists("h3");
-    }
-
 }

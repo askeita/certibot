@@ -386,14 +386,22 @@ class QuizController extends AbstractController
             $collections = $database->listCollections();
 
             $collectionExists = false;
+            $collectionNames = [];
+
             foreach ($collections as $collection) {
-                if ($collection->getName() === "sf{$version}_topics_links") {
+                $collectionName = $collection->getName();
+                $collectionNames[] = $collectionName;
+
+                if ($collectionName === "sf{$version}_topics_links") {
                     $collectionExists = true;
-                    break;
                 }
             }
 
-            return $this->json(['exists' => $collectionExists]);
+            return $this->json([
+                'exists' => $collectionExists,
+                'searchedFor' => "sf{$version}_topics_links",
+                'foundCollections' => $collectionNames
+            ]);
         } catch (\Exception $e) {
             return $this->json(['error' => 'Database error: ' . $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }

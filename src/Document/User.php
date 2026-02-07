@@ -9,9 +9,8 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
 
 /**
  * User Document
- * @MongoDB\Document
  */
-#[MongoDB\Document(collection: 'users')]
+#[MongoDB\Document(collection: 'users', repositoryClass: \App\Repository\UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[MongoDB\Id]

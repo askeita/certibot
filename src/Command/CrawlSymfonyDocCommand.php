@@ -3,6 +3,7 @@
 namespace App\Command;
 
 use App\Repository\MongoDBQueryBuilder;
+use App\Service\BrowserClientService;
 use Facebook\WebDriver\Exception\NoSuchElementException;
 use Facebook\WebDriver\Exception\TimeoutException;
 use Psr\Log\LoggerInterface;
@@ -35,14 +36,14 @@ class CrawlSymfonyDocCommand extends Command
      *
      * @param LoggerInterface $logger
      * @param string $mongoDbUrl
-     * @param string $chromeDriverPath
+     * @param BrowserClientService $browserClientService
      */
-    public function __construct(LoggerInterface $logger,
-                                private readonly string $mongoDbUrl,
-                                private readonly string $chromeDriverPath)
-    {
+    public function __construct(
+        LoggerInterface $logger,
+        private readonly string $mongoDbUrl,
+        private readonly BrowserClientService $browserClientService,
+    ) {
         parent::__construct();
-
         $this->logger = $logger;
     }
 
@@ -53,7 +54,7 @@ class CrawlSymfonyDocCommand extends Command
      */
     protected function configure(): void
     {
-        $this->addArgument("version", InputArgument::REQUIRED, "The Symfony version to crawl (must be a number between 3 and 7).");
+        $this->addArgument("version", InputArgument::REQUIRED, "The Symfony version to crawl (must be a number between 6 and 8).");
     }
 
     /**
@@ -99,8 +100,8 @@ class CrawlSymfonyDocCommand extends Command
     private function validateVersion(InputInterface $input, SymfonyStyle $io): ?int
     {
         $argVersion = $input->getArgument('version');
-        if (!ctype_digit($argVersion) || (int)$argVersion < 3 || (int)$argVersion > 7) {
-            $io->error("The version must be a number between 3 and 7.");
+        if (!ctype_digit($argVersion) || (int)$argVersion < 6 || (int)$argVersion > 8) {
+            $io->error("The version must be an integer between 6 and 8.");
 
             return null;
         }
@@ -117,7 +118,7 @@ class CrawlSymfonyDocCommand extends Command
      */
     private function fetchExamTopics(int $version, SymfonyStyle $io): array
     {
-        $queryBuilder = (new MongoDBQueryBuilder($this->mongoDbUrl, "symfony_certification"))
+        $queryBuilder = new MongoDBQueryBuilder($this->mongoDbUrl, "symfony_certification")
             ->selectCollection("sf{$version}_exam_topics");
         $topicsCollection = json_decode(json_encode(
             $queryBuilder
@@ -155,17 +156,7 @@ class CrawlSymfonyDocCommand extends Command
         $topicsLinksCollection = $mongoClient->selectCollection("symfony_certification", "sf{$version}_topics_links");
         $topicsLinksCollection->drop();
 
-        if (empty($this->chromeDriverPath)) {
-            $message = "ChromeDriver path is not set. Please configure the 'CHROMEDRIVER_PATH' environment variable.";
-            $this->logger->error($message);
-            throw new \Exception($message);
-        }
-
-        $client = Client::createChromeClient($this->chromeDriverPath, [
-            '--headless',
-            '--disable-dev-shm-usage',
-            '--no-sandbox'
-        ]);
+        $client = $this->browserClientService->createClient();
 
         foreach ($topicsSections as $section) {
             $this->processSection($client, $version, $section, $topicsLinksCollection, $io);
@@ -181,64 +172,101 @@ class CrawlSymfonyDocCommand extends Command
      * @param $topicsLinksCollection
      * @param SymfonyStyle $io
      * @return void
+     * @throws NoSuchElementException
      */
     private function processSection(Client $client, int $version, string $section, $topicsLinksCollection, SymfonyStyle $io): void
     {
-        $crawler = $client->request("GET", "https://symfony.com/doc/$version.0/index.html");
+        $this->logger->debug("Processing section: " . json_encode($section));
 
-        // Find the search input field, fill it with the section title and submit the search form
-        $searchInput = $crawler->filter('input[type="search"]')->first();
-        $searchInput->sendKeys($section);
-        $searchInput->submit();
-
-        // Wait for the search results to load
         try {
-            $resultsCrawler = $client->waitFor('.search-results');
-        } catch (NoSuchElementException $e) {
-            $io->error("No search results found for topic: " . json_encode($section) . " - " . $e->getMessage());
+            // Build the Symfony search URL for this topic and version. Current docs use a global search endpoint
+            $query = urlencode($section);
+            $searchUrl = sprintf('https://symfony.com/search?q=%s&version=%d.0', $query, $version);
 
-            return;
-        } catch (TimeoutException $e) {
-            $io->error("Timeout while waiting for search results for topic: " . json_encode($section) . " - " . $e->getMessage());
+            $this->logger->debug("Searching URL: " . $searchUrl);
+            $client->request('GET', $searchUrl);
+
+            // Wait until at least one search result item is present.
+            // The exact selector may need to be tweaked if Symfony adjusts the markup.
+            try {
+                $resultsCrawler = $client->waitFor('main article, main .search-result, main li', 45);
+            } catch (TimeoutException $e) {
+                $io->error('Timeout while waiting for search results for topic: ' . json_encode($section)
+                    . ' - Element "main article, main .search-result, main li" not found within 45 seconds. - ' .
+                    $e->getMessage());
+
+                return;
+            }
+        } catch (NoSuchElementException $e) {
+            $io->error('No search results page found for topic: ' . json_encode($section) . ' - ' . $e->getMessage());
 
             return;
         } catch (\Exception $e) {
-            $io->error("An error occurred while waiting for search results: " . $e->getMessage());
+            $io->error('An error occurred while processing topic ' . json_encode($section) . ': ' . $e->getMessage());
 
             return;
         }
 
-        // Get the search results
-        $links = $resultsCrawler->filter('.search-results .search-result')->each(function ($node) {
+        // Extract links from the results page.
+        // We are intentionally generous with selectors and then filter programmatically.
+        $links = $resultsCrawler->filter('main a')->each(function ($node) use ($version) {
             static $counter = 0;
 
-            if ($counter > 3 || empty($node)) {
+            if ($counter >= 4 || empty($node)) {
                 return [];
             }
 
-            $title = $node->filter('.search-result-title')->text();
-            $url = $node->filter("a")->first()->attr("href");
+            $href = $node->attr('href');
+            if (empty($href)) {
+                return [];
+            }
+
+            // Keep only documentation links.
+            if (!str_contains($href, '/doc/')) {
+                return [];
+            }
+
+            $title = trim($node->text(''));
+            if ($title === '') {
+                return [];
+            }
+
             $counter++;
 
+            // Normalize URL (absolute vs relative).
+            if (!str_starts_with($href, 'http')) {
+                $href = 'https://symfony.com' . $href;
+            }
+
+            // Replace 'current' by the concrete version (e.g. 6.0) in documentation URLs
+            $versionString = sprintf('%d.0', $version);
+            $href = str_replace('/doc/current/', '/doc/' . $versionString . '/', $href);
+
             return [
-                "title" => $title,
-                "url" => $url,
+                'title' => $title,
+                'url'   => $href,
             ];
         });
 
+        // Remove empty entries.
+        $links = array_values(array_filter($links));
+
         if (empty($links)) {
-            $io->error("No links found for topic: " . json_encode($section));
+            $io->error('No links found for topic: ' . json_encode($section));
+
             return;
         }
 
         // Insert the links into the corresponding MongoDB collection
         $topicsLinksCollection->insertOne([
-            'section' => $section,
-            'links' => $links,
-            'scraped_at' => (new \DateTime())->format('Y-m-d H:i:s')
+            'section'    => $section,
+            'links'      => $links,
+            'scraped_at' => new \DateTime()->format('Y-m-d H:i:s'),
         ]);
 
-        $io->success("Finished crawling the Symfony documentation website for topic: " . json_encode($section));
+        $this->logger->info("Successfully retrieved search results for topic: " . json_encode($section) . " with " .
+            count($links) . " links found.");
+        $io->success('Finished crawling the Symfony documentation website for topic: ' . json_encode($section));
     }
 
 }
