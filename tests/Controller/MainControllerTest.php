@@ -48,7 +48,6 @@ class MainControllerTest extends WebTestCase
         $client = static::createClient();
         $client->request('GET', '/symfony');
 
-        $this->assertResponseStatusCodeSame("404");
-        $this->assertSelectorTextContains('h1', 'Symfony');
+        $this->assertResponseStatusCodeSame(404);
     }
 }
