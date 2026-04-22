@@ -96,6 +96,12 @@
             ".env.dev"
         ]
     },
+    "symfony/form": {
+        "version": "7.4",
+        "recipe": {
+            "version": "7.2"
+        }
+    },
     "symfony/framework-bundle": {
         "version": "6.4",
         "recipe": {
@@ -195,6 +201,12 @@
             "phpunit.xml.dist",
             "tests/bootstrap.php"
         ]
+    },
+    "symfony/property-info": {
+        "version": "7.4",
+        "recipe": {
+            "version": "7.3"
+        }
     },
     "symfony/routing": {
         "version": "6.4",

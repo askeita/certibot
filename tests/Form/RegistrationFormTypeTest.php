@@ -24,7 +24,7 @@ class RegistrationFormTypeTest extends TestCase
 
         // Créer une factory de formulaires avec extension Validator
         $validator = Validation::createValidatorBuilder()
-            ->disableAnnotationMapping()
+            ->enableAttributeMapping()
             ->getValidator();
 
         $this->factory = Forms::createFormFactoryBuilder()
