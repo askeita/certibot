@@ -93,7 +93,7 @@ class CrawlController extends AbstractController
                     'success' => false,
                     'error' => 'Crawl documentation command execution failed with return code: '.$returnCode,
                     'output' => $output->fetch(),
-                ], RESPONSE::HTTP_INTERNAL_SERVER_ERROR);
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
         } catch (\Exception $e) {
             return $this->json(

@@ -134,8 +134,16 @@ class CrawlSymfonyDocCommand extends Command
 
         $sections = [];
         array_walk_recursive($topicsCollection[0]["topics"], function ($v) use (&$sections) {
-            $sections[] = $v;
+            if (!empty($v) && is_string($v)) {
+                $sections[] = $v;
+            }
         });
+
+        if (empty($sections)) {
+            $io->error("No valid exam topics sections found for Symfony version $version. The topics array is empty or contains only empty values. Please re-run the `CrawlSymfonyExamTopicsCommand` command to properly scrape the exam topics.");
+
+            return [];
+        }
 
         return $sections;
     }
