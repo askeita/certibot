@@ -344,6 +344,75 @@ class QuizController extends AbstractController
     }
 
     /**
+     * Displays exam topics for a given Symfony version
+     *
+     * @param int $version                          Symfony version
+     * @param DocumentManager $documentManager      Document manager
+     * @return Response                             Response with exam topics page
+     */
+    #[Route('/{version}/exam-topics', name: 'app_exam_topics', methods: ['GET'])]
+    public function examTopics(int $version, DocumentManager $documentManager): Response
+    {
+        try {
+            // Get the database and collection
+            $database = $documentManager->getClient()->selectDatabase("symfony_certification");
+            $collection = $database->selectCollection("sf{$version}_exam_topics");
+
+            // Fetch exam topics
+            $cursor = $collection->find();
+            $examTopicsData = iterator_to_array($cursor);
+
+            // If no topics found, show appropriate page
+            if (empty($examTopicsData)) {
+                return $this->render('symfony/no_exam_topics_found.html.twig', [
+                    'version' => $version
+                ]);
+            }
+
+            // Extract the exam topics array from the document
+            $examTopics = [];
+            if (isset($examTopicsData[0])) {
+                $firstDoc = $examTopicsData[0];
+
+                // Convert MongoDB document to array if needed
+                if (is_object($firstDoc)) {
+                    if (method_exists($firstDoc, 'getArrayCopy')) {
+                        $docArray = $firstDoc->getArrayCopy();
+                    } else {
+                        $docArray = (array)$firstDoc;
+                    }
+                } else {
+                    $docArray = $firstDoc;
+                }
+
+                // Look for exam topics in various possible field names
+                if (isset($docArray['exam_topics'])) {
+                    $examTopics = $docArray['exam_topics'];
+                } elseif (isset($docArray['topics'])) {
+                    $examTopics = $docArray['topics'];
+                } else {
+                    // Filter out MongoDB internal fields starting with '_'
+                    $examTopics = array_values(array_filter($docArray, function($key) {
+                        return is_string($key) && !str_starts_with($key, '_');
+                    }, ARRAY_FILTER_USE_KEY));
+                }
+            }
+
+            // Render the exam topics page
+            return $this->render('symfony/exam-topics.html.twig', [
+                'version' => $version,
+                'examTopics' => $examTopics
+            ]);
+
+        } catch (\Exception $e) {
+            return $this->render('symfony/no_exam_topics_found.html.twig', [
+                'version' => $version,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Check for an existing exam topic corresponding to a given Symfony version
      *
      * @param int $version                          Symfony version
