@@ -1,0 +1,11 @@
+# ChromeDriver binaries
+chromedriver
+chromedriver.old*
+geckodriver
+
+# Downloaded archives
+*.zip
+
+# Backup files
+*.old
+*.old.*
