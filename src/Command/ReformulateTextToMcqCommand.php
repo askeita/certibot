@@ -210,26 +210,75 @@ class ReformulateTextToMcqCommand extends Command
     {
         $openAIClient = OpenAI::client($this->openAIApiKey);
         $questions = [];
+        $consecutiveErrors = 0;
+        $maxConsecutiveErrors = 5;
+
+        // Create browser client once for all requests
+        $browserClient = null;
+        try {
+            $browserClient = $this->browserClientService->createClient();
+        } catch (\RuntimeException $e) {
+            $io->error("Failed to create browser client: " . $e->getMessage());
+            return [];
+        }
 
         foreach ($links as $link) {
             try {
-                $text = $this->fetchTextFromLink($link, $io);
+                // Add delay between HTTP requests to Symfony.com to avoid rate limiting
+                // This is BEFORE fetching, not after
+                if (count($questions) > 0) {
+                    $io->note("Waiting 3 seconds before next request to avoid rate limiting...");
+                    sleep(3);
+                }
+
+                $text = $this->fetchTextFromLink($link, $browserClient, $io);
                 if (!$text) {
+                    $consecutiveErrors++;
+                    if ($consecutiveErrors >= $maxConsecutiveErrors) {
+                        $io->warning('Too many consecutive errors. Stopping to avoid further issues.');
+                        break;
+                    }
                     continue;
                 }
+
+                // Text successfully fetched, reset error counter
+                $consecutiveErrors = 0;
 
                 $question = $this->generateQuestionFromText($openAIClient, $text, $link, $io);
                 if ($question) {
                     $questions[] = $question;
+                    $io->success("Question #" . count($questions) . " generated successfully from: $link");
                 }
 
                 if (count($questions) === 75) {
                     break;
                 }
-            } catch (Exception $e) {
-                $message = 'Error occurred for the link: '.$link.' - '.$e->getMessage();
+            } catch (\Exception $e) {
+                $consecutiveErrors++;
+                $errorMessage = $e->getMessage();
+                $message = 'Error occurred for the link: '.$link.' - '.$errorMessage;
                 $this->logger->error($message);
                 $io->error($message);
+
+                // If too many consecutive errors, stop
+                if ($consecutiveErrors >= $maxConsecutiveErrors) {
+                    $io->warning("Too many consecutive errors ({$consecutiveErrors}). Stopping to avoid further issues.");
+                    break;
+                }
+
+                // Wait before continuing after an error
+                $waitTime = 5;
+                $io->note("Waiting {$waitTime} seconds before continuing...");
+                sleep($waitTime);
+            }
+        }
+
+        // Close browser client
+        if ($browserClient) {
+            try {
+                $browserClient->quit();
+            } catch (\Exception $e) {
+                $this->logger->warning("Failed to close browser client: " . $e->getMessage());
             }
         }
 
@@ -240,45 +289,92 @@ class ReformulateTextToMcqCommand extends Command
      * Fetches text from a link using the Symfony Panther client.
      *
      * @param string $link
+     * @param \Symfony\Component\Panther\Client $client
      * @param SymfonyStyle $io
      * @return string|null
      */
-    private function fetchTextFromLink(string $link, SymfonyStyle $io): ?string
+    private function fetchTextFromLink(string $link, $client, SymfonyStyle $io): ?string
     {
-        if (empty($this->chromeDriverPath)) {
-            $this->logger->error("ChromeDriver path is not set. Please configure the 'CHROMEDRIVER_PATH' environment variable.");
-
-            return Command::FAILURE;
-        }
-
         $this->logger->debug("Processing link: " . $link);
-        // Fetch the content of the links
-        $client = $this->browserClientService->createClient();
-        $crawler = $client->request("GET", $link);
-        $class = substr_count($link, '#') > 1 ? 'section' : '';
 
-        $pElements = $crawler->filter('div' . $class . ' > p');
-        $pTagsCount = $pElements->count();
-        if ($pTagsCount < 1) {
-            $pElements = $crawler->filter('p');
-            $pTagsCount = $pElements->count();
+        $maxRetries = 3;
+        $retryDelay = 5;
 
-            if ($pTagsCount < 1) {
-                $io->error('No <p> tags found in the link: ' . $link);
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                // Fetch the content of the links
+                $crawler = $client->request("GET", $link);
+
+                // Check if page contains rate limit message
+                $pageText = $crawler->filter('body')->text();
+                if (str_contains(strtolower($pageText), 'rate limit') ||
+                    str_contains(strtolower($pageText), 'too many requests')) {
+                    throw new \RuntimeException("Request rate limit has been exceeded.");
+                }
+
+                // Successfully fetched, now extract text
+                $class = substr_count($link, '#') > 1 ? 'section' : '';
+
+                $pElements = $crawler->filter('div' . $class . ' > p');
+                $pTagsCount = $pElements->count();
+                if ($pTagsCount < 1) {
+                    $pElements = $crawler->filter('p');
+                    $pTagsCount = $pElements->count();
+
+                    if ($pTagsCount < 1) {
+                        $io->warning('No <p> tags found in the link: ' . $link);
+                        return null;
+                    }
+                }
+
+                $randomIndex = $pTagsCount > 1 ? rand(0, $pTagsCount - 1) : 0;
+                $pTag = $pElements->eq($randomIndex);
+                $text = $pTag->text();
+
+                if (empty($text) || strlen($text) < 50) {
+                    $io->warning("Text too short or empty in the link: $link");
+                    return null;
+                }
+
+                return $text;
+
+            } catch (\RuntimeException $e) {
+                $errorMsg = $e->getMessage();
+                $this->logger->error("Browser client error (attempt {$attempt}/{$maxRetries}): " . $errorMsg);
+
+                // Check if it's a rate limit error
+                if (str_contains(strtolower($errorMsg), 'rate limit') ||
+                    str_contains(strtolower($errorMsg), 'too many requests')) {
+
+                    if ($attempt < $maxRetries) {
+                        $waitTime = $retryDelay * $attempt;
+                        $io->warning("Rate limit detected for {$link}. Waiting {$waitTime} seconds before retry {$attempt}/{$maxRetries}...");
+                        sleep($waitTime);
+                        continue;
+                    } else {
+                        $io->error("Rate limit error persists after {$maxRetries} attempts for: {$link}");
+                        return null;
+                    }
+                }
+
+                // Other runtime errors
+                if ($attempt < $maxRetries) {
+                    $io->warning("Error fetching {$link}, retrying in {$retryDelay} seconds... (attempt {$attempt}/{$maxRetries})");
+                    sleep($retryDelay);
+                    continue;
+                }
+
+                $io->error("Failed to fetch {$link} after {$maxRetries} attempts: " . $errorMsg);
+                return null;
+
+            } catch (\Exception $e) {
+                $this->logger->error("Unexpected error: " . $e->getMessage());
+                $io->error("Unexpected error for {$link}: " . $e->getMessage());
                 return null;
             }
         }
 
-        $randomIndex = $pTagsCount > 1 ? rand(0, $pTagsCount - 1) : 0;
-        $pTag = $pElements->eq($randomIndex);
-        $text = $pTag->text();
-
-        if (empty($text) || strlen($text) < 50) {
-            $io->warning("Text too short or empty in the link: $link");
-            return null;
-        }
-
-        return $text;
+        return null;
     }
 
     /**

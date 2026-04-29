@@ -47,6 +47,10 @@ services:
             $geckoDriverPath: '%env(GECKO_DRIVER_PATH)%'
             $edgeDriverPath: '%env(EDGE_DRIVER_PATH)%'
 
+    App\Service\DriverUpdaterService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Command\CrawlSymfonyExamTopicsCommand:
         arguments:
             $mongoDbUrl: '%env(MONGODB_URL)%'
