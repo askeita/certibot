@@ -140,7 +140,7 @@ class CrawlSymfonyDocCommand extends Command
         });
 
         if (empty($sections)) {
-            $io->error("No valid exam topics sections found for Symfony version $version. The topics array is empty or contains only empty values. Please re-run the `CrawlSymfonyExamTopicsCommand` command to properly scrape the exam topics.");
+            $io->error("No valid exam topics sections found for Symfony version $version. The topics array is empty or contains only empty values. Please re-run the `app:crawl:symfony-exam-topics` command to properly scrape the exam topics.");
 
             return [];
         }
