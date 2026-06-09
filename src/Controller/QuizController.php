@@ -359,7 +359,7 @@ class QuizController extends AbstractController
             $collection = $database->selectCollection("sf{$version}_exam_topics");
 
             // Fetch exam topics
-            $cursor = $collection->find();
+            $cursor = $collection->find([], ['limit' => 1]);
             $examTopicsData = iterator_to_array($cursor);
 
             // If no topics found, show appropriate page
