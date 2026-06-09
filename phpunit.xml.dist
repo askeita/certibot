@@ -26,10 +26,10 @@
     </source>
 
     <extensions>
-        <bootstrap class="Symfony\Bridge\PhpUnit\SymfonyExtension" />
+        <extension class="Symfony\Bridge\PhpUnit\SymfonyExtension" />
         <!-- Run `composer require symfony/panther` before enabling this extension -->
         <!--
-        <bootstrap class="Symfony\Component\Panther\ServerExtension" />
+        <extension class="Symfony\Component\Panther\ServerExtension" />
         -->
     </extensions>
 </phpunit>
