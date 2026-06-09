@@ -407,7 +407,7 @@ class QuizController extends AbstractController
         } catch (\Exception $e) {
             return $this->render('symfony/no_exam_topics_found.html.twig', [
                 'version' => $version,
-                'error' => $e->getMessage()
+                'error' => 'Unable to load exam topics at the moment.'
             ]);
         }
     }
