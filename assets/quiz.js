@@ -385,6 +385,18 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => console.error('Error in sending the response:', error));
     }
 
+    /**
+     * Safely redirects to a URL only if it is a same-origin relative path.
+     * Prevents DOM-based XSS by rejecting javascript: URIs or external URLs.
+     *
+     * @param {string|null} url - The URL to redirect to.
+     */
+    function safeRedirect(url) {
+        if (typeof url === 'string' && /^\/[^/\\]/.test(url)) {
+            window.location.href = url;
+        }
+    }
+
     // Previous and next navigation with timer consideration
     document.getElementById('prevButton')?.addEventListener('click', function (e) {
         if (this.classList.contains('disabled')) {
@@ -394,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         saveQuizTimer();
         saveResponses();
-        window.location.href = this.getAttribute('data-url');
+        safeRedirect(this.getAttribute('data-url'));
     });
 
     // Next button to save responses and redirect to the next question
@@ -403,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         saveQuizTimer();
         saveResponses();
-        window.location.href = this.getAttribute('data-url');
+        safeRedirect(this.getAttribute('data-url'));
     })
 
     // Finish button to save responses and redirect to result page
@@ -411,7 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
 
         saveResponses();
-        window.location.href = this.getAttribute('data-url');
+        safeRedirect(this.getAttribute('data-url'));
     })
 
     // Confirmation before leaving the page
