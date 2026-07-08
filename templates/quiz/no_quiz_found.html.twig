@@ -10,12 +10,19 @@
             </div>
             <div class="card-body text-center">
                 <div class="alert alert-warning mb-4">
-                    <p class="lead">No quiz data were found for the Symfony version {{ version }}</p>
+                    <p class="lead">No quiz data were found for {{ technologyLabel }}</p>
                 </div>
                 <p class="mt-4">Do you want to generate quiz data now?</p>
 
                 <div class="d-flex justify-content-center mt-4">
-                    <button id="generateYesButton" class="btn btn-primary me-3" data-version="{{ version }}">Yes</button>
+                    <button id="generateYesButton" class="btn btn-primary me-3"
+                            data-check-topics-url="{{ checkTopicsUrl }}"
+                            data-crawl-topics-url="{{ crawlTopicsUrl }}"
+                            data-check-links-url="{{ checkLinksUrl }}"
+                            data-crawl-doc-url="{{ crawlDocUrl }}"
+                            data-mcq-url="{{ mcqUrl }}"
+                            data-quiz-url="{{ quizUrl }}"
+                            data-label="{{ technologyLabel }}">Yes</button>
                     <a href="{{ path('app_index') }}" class="btn btn-outline-secondary">No</a>
                 </div>
             </div>

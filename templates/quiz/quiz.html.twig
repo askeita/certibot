@@ -1,8 +1,14 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Symfony Certification Quiz{% endblock %}
+{% block title %}Quiz{% endblock %}
 
 {% block body %}
+    {# Hidden config element — read by quiz.js to get technology-agnostic endpoint URLs #}
+    <div id="quiz-config"
+         data-save-timer-url="{{ saveTimerUrl }}"
+         data-save-response-url="{{ saveResponseUrl }}"
+         style="display:none;"></div>
+
     <div class="container mt-4">
         <div class="card">
             <div class="card-header bg-primary text-white">
@@ -45,11 +51,11 @@
             </div>
             <div class="card-footer d-flex justify-content-between">
                 <a href="#" id="prevButton" class="btn btn-secondary {% if questionIndex == 0 %}disabled{% endif %}"
-                    data-url="{{ path('app_quiz', {'prev': 1, 'version': version}) }}">Previous</a>
+                    data-url="{{ prevUrl }}">Previous</a>
                 {% if isLastQuestion %}
-                    <a href="#" id="finishButton" class="btn btn-success" data-url="{{ path('app_quiz_finish', {'version': version}) }}">Complete the quiz</a>
+                    <a href="#" id="finishButton" class="btn btn-success" data-url="{{ finishUrl }}">Complete the quiz</a>
                 {% else %}
-                    <a href="#" id="nextButton" class="btn btn-primary" data-url="{{ path('app_quiz', {'next': 1, 'version': version}) }}">Next</a>
+                    <a href="#" id="nextButton" class="btn btn-primary" data-url="{{ nextUrl }}">Next</a>
                 {% endif %}
             </div>
         </div>

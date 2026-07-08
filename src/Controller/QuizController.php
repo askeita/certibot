@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Form\QuizType;
 use App\Repository\MongoDBQueryBuilder;
+use App\Service\QuizSessionService;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -16,7 +17,11 @@ use Symfony\Component\Routing\Annotation\Route;
 
 
 /**
- * QuizController handles the quiz functionality.
+ * QuizController handles the Symfony certification quiz.
+ *
+ * Business logic (navigation, scoring, timer, session) is delegated to QuizSessionService
+ * following the Single Responsibility Principle. Templates receive computed URLs so they
+ * remain technology-agnostic and reusable by PhpQuizController.
  */
 #[Route('/symfony')]
 class QuizController extends AbstractController
@@ -34,7 +39,8 @@ class QuizController extends AbstractController
     public function __construct(
         #[Autowire(service: 'App\Repository\MongoDBQueryBuilder.mcq_gpt-4o')]
         MongoDBQueryBuilder $mcqQueryBuilder,
-        private readonly LoggerInterface $logger
+        private readonly LoggerInterface $logger,
+        private readonly QuizSessionService $quizSessionService
     )
     {
         $this->mcqQueryBuilder = $mcqQueryBuilder;
@@ -51,7 +57,7 @@ class QuizController extends AbstractController
     #[Route('/{version}/quiz', name: 'app_quiz')]
     public function index(Request $request, SessionInterface $session, int $version): Response
     {
-        $questionIndex = $this->handleNavigation($request, $session);
+        $questionIndex = $this->quizSessionService->handleNavigation($request, $session);
 
         if (!$session->has('userResponses')) {
             $session->set('userResponses', []);
@@ -59,50 +65,62 @@ class QuizController extends AbstractController
 
         $quizData = $this->getQuizData($version);
 
-        $duration = 5400; // the default duration is 90 minutes (5400 seconds)
-        if ($session->has("duration")) {
-            $duration = $session->get("duration");
+        $duration = 5400;
+        if ($session->has('duration')) {
+            $duration = $session->get('duration');
         }
-
         if ($request->query->has('duration')) {
-            $duration = (int)$request->query->get('duration');
-            $session->set("duration", $duration);
+            $duration = (int) $request->query->get('duration');
+            $session->set('duration', $duration);
         }
 
         if (empty($quizData) || !isset($quizData[0]['mcq'])) {
-            return $this->render('quiz/no_quiz_found.html.twig', ['version' => $version]);
+            return $this->render('quiz/no_quiz_found.html.twig', [
+                'technologyLabel'  => "Symfony {$version}",
+                'checkTopicsUrl'   => $this->generateUrl('app_check_exam_topics', ['version' => $version]),
+                'crawlTopicsUrl'   => $this->generateUrl('app_execute_crawl_topics_command', ['version' => $version]),
+                'checkLinksUrl'    => $this->generateUrl('app_check_topics_links', ['version' => $version]),
+                'crawlDocUrl'      => $this->generateUrl('app_execute_crawl_doc_command', ['version' => $version]),
+                'mcqUrl'           => $this->generateUrl('app_execute_mcq_command', ['version' => $version]),
+                'quizUrl'          => $this->generateUrl('app_quiz', ['version' => $version]),
+            ]);
         }
 
-        $questions = $this->prepareQuestions($quizData[0]['mcq'], $duration);
+        $questions = $this->quizSessionService->prepareQuestions($quizData[0]['mcq'], $duration);
         $totalQuestions = count($questions);
         if ($questionIndex >= $totalQuestions) {
             $questionIndex = 0;
-            $session->set('question_index', $questionIndex);
+            $session->set('questionIndex', $questionIndex);
         }
 
-        $timerDuration = $this->handleTimer($session, $questionIndex, $duration);
+        $timerDuration = $this->quizSessionService->handleTimer($session, $questionIndex, $duration);
         $currentQuestion = $questions[$questionIndex];
-        $choices = $this->prepareChoices($currentQuestion);
-        $formChoices = $this->prepareFormChoices($choices);
+        $choices = $this->quizSessionService->prepareChoices($currentQuestion);
+        $formChoices = $this->quizSessionService->prepareFormChoices($choices);
 
         $userResponses = $session->get('userResponses', []);
         $userResponse = $userResponses[$questionIndex] ?? [];
         $form = $this->createForm(QuizType::class, null, ['choices' => $formChoices]);
-        $progressPercentage = ($questionIndex / ($totalQuestions - 1)) * 100;
+        $progressPercentage = ($questionIndex / max(1, $totalQuestions - 1)) * 100;
 
         return $this->render('quiz/quiz.html.twig', [
-            'version' => $version,
-            'form' => $form->createView(),
-            'question' => $currentQuestion['question'],
-            'answer' => $currentQuestion['answer'],
-            'link' => $currentQuestion['link'],
-            'choices' => $choices,
-            'userResponse' => $userResponse,
-            'questionIndex' => $questionIndex,
-            'totalQuestions' => $totalQuestions,
-            'timerDuration' => $timerDuration,
+            'version'            => $version,
+            'form'               => $form->createView(),
+            'question'           => $currentQuestion['question'],
+            'answer'             => $currentQuestion['answer'],
+            'link'               => $currentQuestion['link'],
+            'choices'            => $choices,
+            'userResponse'       => $userResponse,
+            'questionIndex'      => $questionIndex,
+            'totalQuestions'     => $totalQuestions,
+            'timerDuration'      => $timerDuration,
             'progressPercentage' => $progressPercentage,
-            'isLastQuestion' => ($questionIndex == $totalQuestions - 1),
+            'isLastQuestion'     => ($questionIndex == $totalQuestions - 1),
+            'saveTimerUrl'       => $this->generateUrl('app_quiz_save_timer', ['version' => $version]),
+            'saveResponseUrl'    => $this->generateUrl('app_quiz_save_response', ['version' => $version]),
+            'prevUrl'            => $this->generateUrl('app_quiz', ['prev' => 1, 'version' => $version]),
+            'nextUrl'            => $this->generateUrl('app_quiz', ['next' => 1, 'version' => $version]),
+            'finishUrl'          => $this->generateUrl('app_quiz_finish', ['version' => $version]),
         ]);
     }
 
@@ -230,7 +248,7 @@ class QuizController extends AbstractController
     #[Route('/{version}/quiz/save-timer', name: 'app_quiz_save_timer', methods: ['POST'])]
     public function saveTimer(Request $request, SessionInterface $session): JsonResponse
     {
-        $timeLeft = (int)$request->request->get('timeLeft');
+        $timeLeft = (int) $request->request->get('timeLeft');
         $questionIndex = $session->get('questionIndex', 0);
 
         $questionTimers = $session->get('questionTimers', []);
@@ -252,7 +270,6 @@ class QuizController extends AbstractController
     public function saveResponse(Request $request, SessionInterface $session): JsonResponse
     {
         $formDataString = $request->request->get('formData');
-
         $formData = json_decode($formDataString, true);
         $questionIndex = $session->get('questionIndex', 0);
         $selectedChoice = $formData['quiz[selectChoices]'] ?? null;
@@ -275,59 +292,24 @@ class QuizController extends AbstractController
     public function finishQuiz(SessionInterface $session, int $version): Response
     {
         $allQuestions = $this->getQuizData($version)[0]['mcq'] ?? [];
-        $duration = $session->get("duration");
-        $totalQuestions = round(($duration/60) * 90 / count($allQuestions), 0, PHP_ROUND_HALF_UP);
-        $questions = array_splice($allQuestions, 0, $totalQuestions);
+        $duration = $session->get('duration', 5400);
+        $questions = $this->quizSessionService->prepareQuestions($allQuestions, $duration);
+        $totalQuestions = count($questions);
 
         $userResponses = $session->get('userResponses', []);
-        [$results, $correctAnswers] = $this->calculateResults($questions, $userResponses);
+        [$results, $correctAnswers] = $this->quizSessionService->calculateResults($questions, $userResponses);
         $score = $totalQuestions > 0 ? ($correctAnswers / $totalQuestions) * 100 : 0;
 
-        $this->clearSession($session);
+        $this->quizSessionService->clearSession($session);
 
         return $this->render('quiz/results.html.twig', [
-            'version' => $version,
-            'score' => $score,
+            'version'        => $version,
+            'score'          => $score,
             'correctAnswers' => $correctAnswers,
             'totalQuestions' => $totalQuestions,
-            'results' => $results,
+            'results'        => $results,
+            'restartUrl'     => $this->generateUrl('app_quiz', ['version' => $version]),
         ]);
-    }
-
-    /**
-     * Calculates results based on user responses
-     *
-     * @param array $questions      questions from the quiz
-     * @param array $userResponses  user responses
-     * @return array                user responses and number of correct answers
-     */
-    private function calculateResults(array $questions, array $userResponses): array
-    {
-        $correctAnswers = 0;
-        $results = [];
-
-        foreach ($questions as $index => $question) {
-            $correctOption = null;
-            if (preg_match('/[A-D]/', $question['answer'], $match)) {
-                $correctOption = $match[0];
-            }
-
-            $userChoice = $userResponses[$index] ?? [];
-            $isCorrect = $correctOption === $userChoice;
-            if ($isCorrect) {
-                $correctAnswers++;
-            }
-
-            $results[] = [
-                "question" => $question["question"],
-                "userChoice" => $userChoice,
-                "correctAnswer" => $correctOption,
-                "isCorrect" => $isCorrect,
-                "explanation" => $question["link"]
-            ];
-        }
-
-        return [$results, $correctAnswers];
     }
 
     /**
@@ -356,56 +338,33 @@ class QuizController extends AbstractController
     public function examTopics(int $version, DocumentManager $documentManager): Response
     {
         try {
-            // Get the database and collection
-            $database = $documentManager->getClient()->selectDatabase("symfony_certification");
+            $database = $documentManager->getClient()->selectDatabase('symfony_certification');
             $collection = $database->selectCollection("sf{$version}_exam_topics");
-
-            // Fetch exam topics
             $cursor = $collection->find([], ['limit' => 1]);
             $examTopicsData = iterator_to_array($cursor);
 
-            // If no topics found, show appropriate page
             if (empty($examTopicsData)) {
-                return $this->render('symfony/no_exam_topics_found.html.twig', [
-                    'version' => $version
-                ]);
+                return $this->render('symfony/no_exam_topics_found.html.twig', ['version' => $version]);
             }
 
             // Extract the exam topics array from the document
             $examTopics = [];
             if (isset($examTopicsData[0])) {
                 $firstDoc = $examTopicsData[0];
+                $docArray = is_object($firstDoc)
+                    ? (method_exists($firstDoc, 'getArrayCopy') ? $firstDoc->getArrayCopy() : (array) $firstDoc)
+                    : $firstDoc;
 
-                // Convert MongoDB document to array if needed
-                if (is_object($firstDoc)) {
-                    if (method_exists($firstDoc, 'getArrayCopy')) {
-                        $docArray = $firstDoc->getArrayCopy();
-                    } else {
-                        $docArray = (array)$firstDoc;
-                    }
-                } else {
-                    $docArray = $firstDoc;
-                }
-
-                // Look for exam topics in various possible field names
                 if (isset($docArray['exam_topics'])) {
                     $examTopics = $docArray['exam_topics'];
                 } elseif (isset($docArray['topics'])) {
                     $examTopics = $docArray['topics'];
                 } else {
-                    // Filter out MongoDB internal fields starting with '_'
-                    $examTopics = array_values(array_filter($docArray, function($key) {
-                        return is_string($key) && !str_starts_with($key, '_');
-                    }, ARRAY_FILTER_USE_KEY));
+                    $examTopics = array_values(array_filter($docArray, fn($k) => is_string($k) && !str_starts_with($k, '_'), ARRAY_FILTER_USE_KEY));
                 }
             }
 
-            // Render the exam topics page
-            return $this->render('symfony/exam-topics.html.twig', [
-                'version' => $version,
-                'examTopics' => $examTopics
-            ]);
-
+            return $this->render('symfony/exam-topics.html.twig', ['version' => $version, 'examTopics' => $examTopics]);
         } catch (\Exception $e) {
             $this->logger->error('Failed to load exam topics.', [
                 'version' => $version,
@@ -430,11 +389,9 @@ class QuizController extends AbstractController
     public function checkExamTopics(int $version, DocumentManager $documentManager): JsonResponse
     {
         try {
-            $database = $documentManager->getClient()->selectDatabase("symfony_certification");
-            $collections = $database->listCollections();
-
+            $database = $documentManager->getClient()->selectDatabase('symfony_certification');
             $collectionExists = false;
-            foreach ($collections as $collection) {
+            foreach ($database->listCollections() as $collection) {
                 if ($collection->getName() === "sf{$version}_exam_topics") {
                     $collectionExists = true;
                     break;
@@ -458,17 +415,12 @@ class QuizController extends AbstractController
     public function checkTopicsLinks(int $version, DocumentManager $documentManager): JsonResponse
     {
         try {
-            $database = $documentManager->getClient()->selectDatabase("symfony_certification");
-            $collections = $database->listCollections();
-
+            $database = $documentManager->getClient()->selectDatabase('symfony_certification');
             $collectionExists = false;
             $collectionNames = [];
-
-            foreach ($collections as $collection) {
-                $collectionName = $collection->getName();
-                $collectionNames[] = $collectionName;
-
-                if ($collectionName === "sf{$version}_topics_links") {
+            foreach ($database->listCollections() as $collection) {
+                $collectionNames[] = $collection->getName();
+                if ($collection->getName() === "sf{$version}_topics_links") {
                     $collectionExists = true;
                 }
             }
@@ -494,11 +446,9 @@ class QuizController extends AbstractController
     public function checkMcqCollection(int $version, DocumentManager $documentManager): JsonResponse
     {
         try {
-            $database = $documentManager->getClient()->selectDatabase("symfony_certification");
-            $collections = $database->listCollections();
-
+            $database = $documentManager->getClient()->selectDatabase('symfony_certification');
             $collectionExists = false;
-            foreach ($collections as $collection) {
+            foreach ($database->listCollections() as $collection) {
                 if ($collection->getName() === "sf{$version}_mcq_gpt-4o") {
                     $collectionExists = true;
                     break;

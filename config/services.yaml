@@ -22,6 +22,12 @@ services:
             - '../src/Entity/'
             - '../src/Kernel.php'
 
+    # ── Plugin Registry: all DocSourceInterface implementations are auto-tagged ──
+    _instanceof:
+        App\Core\DocSource\DocSourceInterface:
+            tags: ['app.doc_source']
+
+    # ── MongoDB QueryBuilders ────────────────────────────────────────────────
     App\Repository\MongoDBQueryBuilder.exam_topics:
         class: App\Repository\MongoDBQueryBuilder
         arguments:
@@ -40,6 +46,14 @@ services:
             $url: '%env(MONGODB_URL)%'
             $databaseName: '%env(MONGODB_DB)%'
 
+    # PHP manual uses its own database
+    App\Repository\MongoDBQueryBuilder.php_mcq_gpt-4o:
+        class: App\Repository\MongoDBQueryBuilder
+        arguments:
+            $url: '%env(MONGODB_URL)%'
+            $databaseName: 'php_manual'
+
+    # ── Browser client ───────────────────────────────────────────────────────
     App\Service\BrowserClientService:
         arguments:
             $browser: '%env(BROWSER)%'
@@ -47,10 +61,19 @@ services:
             $geckoDriverPath: '%env(GECKO_DRIVER_PATH)%'
             $edgeDriverPath: '%env(EDGE_DRIVER_PATH)%'
 
+    # ── OpenAI Adapter (hexagonal output port) ───────────────────────────────
+    App\Infrastructure\OpenAI\OpenAiMcqGenerator:
+        arguments:
+            $openAIConfig: '%openai%'
+
+    App\Core\Mcq\Port\McqGeneratorInterface:
+        alias: App\Infrastructure\OpenAI\OpenAiMcqGenerator
+
     App\Service\DriverUpdaterService:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    # ── Commands ─────────────────────────────────────────────────────────────
     App\Command\CrawlSymfonyExamTopicsCommand:
         arguments:
             $mongoDbUrl: '%env(MONGODB_URL)%'
