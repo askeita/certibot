@@ -119,7 +119,7 @@ class CrawlController extends AbstractController
             );
         }
 
-        $input = new ArrayInput(['version' => trim($version)]);
+        $input = new ArrayInput(['source' => 'symfony', 'version' => trim($version)]);
         $output = new BufferedOutput();
 
         try {

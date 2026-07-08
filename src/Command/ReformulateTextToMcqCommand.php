@@ -2,12 +2,14 @@
 
 namespace App\Command;
 
+use App\Core\DocSource\DocSourceInterface;
+use App\Core\Mcq\Port\McqGeneratorInterface;
+use App\Core\Registry\TechnologyRegistry;
 use App\Repository\MongoDBQueryBuilder;
 use App\Service\BrowserClientService;
 use Exception;
 use InvalidArgumentException;
 use MongoDB\Client as MongoDBClient;
-use OpenAI;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -18,220 +20,187 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 
 /**
- * ReformulateTextToMcqCommand handles the reformulation of text into multiple-choice questions using the OpenAI API.
+ * ReformulateTextToMcqCommand — generates MCQs from documentation links.
+ *
+ * Accepts a `source` argument ('symfony' or 'php') to select the target technology
+ * via the TechnologyRegistry, making it fully generic across all registered sources.
+ * OpenAI generation is delegated to McqGeneratorInterface (hexagonal output port),
+ * allowing the AI provider to be swapped without modifying this command.
  */
 #[AsCommand(
     name: 'app:reformulate-text-to-mcq',
-    description: 'Reformulates the text from a \<p\> tag into a multiple-choice question using GPT-4 API.',
+    description: 'Generates multiple-choice questions from documentation links using the configured AI model.',
 )]
 class ReformulateTextToMcqCommand extends Command
 {
-    private LoggerInterface $logger;
+    private const MAX_QUESTIONS = 75;
+    private const MIN_TEXT_LENGTH = 50;
 
-    /**
-     * @var string|mixed
-     */
-    private string $openAIApiKey;
+    private int $requestDelay;
+    private int $maxRetries;
+    private int $retryDelay;
 
-    /**
-     * @var string|mixed
-     */
-    private string $openAIModel;
-
-    /**
-     * @var string|mixed
-     */
-    private int $maxTokens;
-
-    /**
-     * @var float|mixed
-     */
-    private mixed $temperature;
-
-    /**
-     * @var int|mixed
-     */
-    private mixed $topP;
-
-    /**
-     * @var int|mixed
-     */
-    private mixed $nValue;
-
-    /**
-     * Constructor
-     *
-     * @param LoggerInterface $logger
-     * @param string $mongoDbUrl
-     * @param array $openAIConfig
-     * @param BrowserClientService $browserClientService
-     */
     public function __construct(
-        LoggerInterface $logger,
+        private readonly LoggerInterface $logger,
         private readonly string $mongoDbUrl,
-        array $openAIConfig,
-        private readonly BrowserClientService $browserClientService
+        private readonly McqGeneratorInterface $mcqGenerator,
+        private readonly TechnologyRegistry $technologyRegistry,
+        private readonly BrowserClientService $browserClientService,
+        array $webScrapingConfig = []
     ) {
         parent::__construct();
-        $this->logger = $logger;
-        $this->openAIApiKey = $openAIConfig['api_key'] ?? '';
-        $this->openAIModel = $openAIConfig['model'] ?? 'gpt-4o';
-        $this->maxTokens = $openAIConfig['max_tokens'] ?? 200;
-        $this->temperature = $openAIConfig['temperature'] ?? 0.5;
-        $this->topP = $openAIConfig['top_p'] ?? 1;
-        $this->nValue = $openAIConfig['n'] ?? 1;
+
+        // Web scraping configuration to avoid rate limiting
+        $this->requestDelay = $webScrapingConfig['request_delay'] ?? 2;
+        $this->maxRetries = $webScrapingConfig['max_retries'] ?? 3;
+        $this->retryDelay = $webScrapingConfig['retry_delay'] ?? 5;
     }
 
-    /**
-     * Configure
-     *
-     * @return void
-     */
     protected function configure(): void
     {
-        $this->addArgument("version", InputArgument::REQUIRED, "The text of the Symfony version to reformulate (must be a number between 3 and 7).");
+        $this
+            ->addArgument('source', InputArgument::REQUIRED, 'The technology source slug (e.g. "symfony", "php").')
+            ->addArgument('version', InputArgument::OPTIONAL, 'The version identifier (required for versioned sources like Symfony).');
     }
 
-    /**
-     * Executes command
-     *
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     * @return int
-     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $this->logger->info("Starting the command to reformulate text into multiple-choice questions.");
         $io = new SymfonyStyle($input, $output);
-
-        // Use environment variable for the OPENAI_API_KEY
-        if (!$this->openAIApiKey) {
-            $this->logger->error("OPENAI_API_KEY environment variable is not defined in the environment variables.");
-            $io->error("OPENAI_API_KEY environment variable is not defined in the environment variables.");
-
-            return Command::FAILURE;
-        }
+        $this->logger->info('Starting MCQ generation command.');
 
         try {
-            $version = $this->validateVersion($input, $io);
-            $links = $this->fetchLinksFromDatabase($version, $io);
+            $source = $this->resolveSource($input, $io);
+            $identifier = $this->resolveIdentifier($input, $source, $io);
+            $links = $this->fetchLinksFromDatabase($source, $identifier, $io);
 
             if (empty($links)) {
                 return Command::FAILURE;
             }
 
-            $questions = $this->generateQuestionsFromLinks($links, $io);
+            $questions = $this->generateQuestionsFromLinks($links, $source, $io);
+
             if (empty($questions)) {
-                $message = "No questions generated.";
-                $this->logger->error($message);
-                $io->error($message);
+                $io->error('No questions were generated.');
 
                 return Command::FAILURE;
             }
 
-            $this->saveQuestionsToDatabase($version, $questions);
-            $this->logger->info("Multiple-choice questions generated successfully for Symfony $version");
-            $io->success('Multiple-choice question generated!');
+            $this->saveQuestionsToDatabase($source, $identifier, $questions);
+
+            $this->logger->info(sprintf(
+                'MCQ generation completed for %s: %d questions saved.',
+                $source->getDocumentLabel($identifier),
+                count($questions)
+            ));
+            $io->success(sprintf('%d MCQs generated for %s!', count($questions), $source->getDocumentLabel($identifier)));
 
             return Command::SUCCESS;
         } catch (Exception $e) {
-            $this->logger->error('Error occurred for the link: '.$e->getMessage());
-            $io->error('An error occurred: '.$e->getMessage());
+            $this->logger->error('MCQ generation failed: ' . $e->getMessage());
+            $io->error('An error occurred: ' . $e->getMessage());
 
             return Command::FAILURE;
         }
     }
 
     /**
-     * Validates the Symfony version argument.
-     *
-     * @param InputInterface $input
-     * @param SymfonyStyle $io
-     * @return int
+     * Resolves and validates the technology source from the 'source' argument.
      */
-    private function validateVersion(InputInterface $input, SymfonyStyle $io): int
+    private function resolveSource(InputInterface $input, SymfonyStyle $io): DocSourceInterface
     {
-        $argVersion = $input->getArgument('version');
-        $version = (int)trim($argVersion);
-        if (!ctype_digit($argVersion) || $version < 6 || $version > 8) {
-            $message = "Invalid Symfony version. Please provide an integer between 6 and 8.";
-            $this->logger->warning($message);
+        $slug = trim((string) $input->getArgument('source'));
+
+        if (!$this->technologyRegistry->has($slug)) {
+            $available = implode(', ', array_keys($this->technologyRegistry->all()));
+            $message = "Unknown source \"{$slug}\". Available: {$available}.";
             $io->error($message);
             throw new InvalidArgumentException($message);
         }
 
-        return $version;
+        return $this->technologyRegistry->get($slug);
     }
 
     /**
-     * Fetches links from the database for a specific Symfony version.
-     *
-     * @param int $version
-     * @param SymfonyStyle $io
-     * @return array
+     * Resolves the version/identifier argument, validating it against the DocSource rules.
      */
-    private function fetchLinksFromDatabase(int $version, SymfonyStyle $io): array
+    private function resolveIdentifier(InputInterface $input, DocSourceInterface $source, SymfonyStyle $io): mixed
     {
-        $queryBuilder = new MongoDBQueryBuilder($this->mongoDbUrl, "symfony_certification")
-            ->selectCollection("sf{$version}_topics_links");
+        if (!$source->supportsVersion()) {
+            return null;
+        }
+
+        $identifier = $input->getArgument('version');
+        if ($identifier === null) {
+            $message = "The '{$source->getLabel()}' source requires a version argument.";
+            $io->error($message);
+            throw new InvalidArgumentException($message);
+        }
+
+        if (!$source->validateIdentifier($identifier)) {
+            $message = "Invalid version '{$identifier}' for {$source->getLabel()}.";
+            $io->error($message);
+            throw new InvalidArgumentException($message);
+        }
+
+        return (int) $identifier;
+    }
+
+    /**
+     * Reads the documentation links from MongoDB for the given source/identifier.
+     *
+     * @return string[] Shuffled list of documentation URLs.
+     */
+    private function fetchLinksFromDatabase(DocSourceInterface $source, mixed $identifier, SymfonyStyle $io): array
+    {
+        $queryBuilder = new MongoDBQueryBuilder($this->mongoDbUrl, $source->getDatabaseName());
+        $queryBuilder->selectCollection($source->getLinksCollectionName($identifier));
+
         $linksCollection = json_decode(json_encode(
-            $queryBuilder
-                ->find(null)
-                ->toArray()
+            $queryBuilder->find(null)->toArray()
         ), true);
 
-        if (empty($linksCollection["links"])) {
-            $message = "No links found for Symfony version $version. Please check the database and eventually run the `CrawlSymfonyDocCommand` command.";
-            $this->logger->error($message);
-            $io->error($message);
+        if (empty($linksCollection)) {
+            $io->error(sprintf(
+                'No links found for %s. Please run the crawl-doc command first.',
+                $source->getDocumentLabel($identifier)
+            ));
+
+            return [];
         }
 
         $linksUrls = [];
-        //foreach ($linksCollection as $link) {
-            array_walk_recursive($linksCollection, function ($v) use (&$linksUrls) {
-                if (str_starts_with($v, "https://")) {
-                    $linksUrls[] = $v;
-                }
-            });
-        //}
+        array_walk_recursive($linksCollection, function ($v) use (&$linksUrls) {
+            if (is_string($v) && str_starts_with($v, 'https://')) {
+                $linksUrls[] = $v;
+            }
+        });
+
         shuffle($linksUrls);
 
         return $linksUrls;
     }
 
     /**
-     * Generates questions from links using the OpenAI API.
+     * Iterates over documentation links, fetches page content, and generates MCQs.
      *
-     * @param array $links
-     * @param SymfonyStyle $io
-     * @return array
+     * @return array Generated question entries.
      */
-    private function generateQuestionsFromLinks(array $links, SymfonyStyle $io): array
+    private function generateQuestionsFromLinks(array $links, DocSourceInterface $source, SymfonyStyle $io): array
     {
-        $openAIClient = OpenAI::client($this->openAIApiKey);
         $questions = [];
-        $consecutiveErrors = 0;
-        $maxConsecutiveErrors = 5;
-
-        // Create browser client once for all requests
-        $browserClient = null;
-        try {
-            $browserClient = $this->browserClientService->createClient();
-        } catch (\RuntimeException $e) {
-            $io->error("Failed to create browser client: " . $e->getMessage());
-            return [];
-        }
+        $linkCount = 0;
 
         foreach ($links as $link) {
             try {
-                // Add delay between HTTP requests to Symfony.com to avoid rate limiting
-                // This is BEFORE fetching, not after
-                if (count($questions) > 0) {
-                    $io->note("Waiting 3 seconds before next request to avoid rate limiting...");
-                    sleep(3);
+                $linkCount++;
+
+                // Add delay between requests to avoid rate limiting (except for first request)
+                if ($linkCount > 1 && !$source->requiresBrowserForContent()) {
+                    $io->note("Waiting {$this->requestDelay} seconds before next request to avoid rate limiting...");
+                    sleep($this->requestDelay);
                 }
 
-                $text = $this->fetchTextFromLink($link, $browserClient, $io);
+                $text = $this->fetchTextFromLink($link, $source, $io);
                 if (!$text) {
                     $consecutiveErrors++;
                     if ($consecutiveErrors >= $maxConsecutiveErrors) {
@@ -241,16 +210,13 @@ class ReformulateTextToMcqCommand extends Command
                     continue;
                 }
 
-                // Text successfully fetched, reset error counter
-                $consecutiveErrors = 0;
-
-                $question = $this->generateQuestionFromText($openAIClient, $text, $link, $io);
+                $question = $this->mcqGenerator->generateFromText($text, $link);
                 if ($question) {
                     $questions[] = $question;
-                    $io->success("Question #" . count($questions) . " generated successfully from: $link");
+                    $io->success(sprintf('Question %d/%d generated from: %s', count($questions), self::MAX_QUESTIONS, $link));
                 }
 
-                if (count($questions) === 75) {
+                if (count($questions) >= self::MAX_QUESTIONS) {
                     break;
                 }
             } catch (\Exception $e) {
@@ -286,91 +252,138 @@ class ReformulateTextToMcqCommand extends Command
     }
 
     /**
-     * Fetches text from a link using the Symfony Panther client.
+     * Fetches paragraph text from a documentation page.
      *
-     * @param string $link
-     * @param \Symfony\Component\Panther\Client $client
-     * @param SymfonyStyle $io
-     * @return string|null
+     * Uses a real browser for JavaScript-rendered sites (e.g. symfony.com)
+     * and a lightweight HTTP client for static HTML sites (e.g. php.net).
      */
-    private function fetchTextFromLink(string $link, Client $client, SymfonyStyle $io): ?string
+    private function fetchTextFromLink(string $link, DocSourceInterface $source, SymfonyStyle $io): ?string
     {
-        $this->logger->debug("Processing link: " . $link);
+        if ($source->requiresBrowserForContent()) {
+            return $this->fetchTextWithBrowser($link, $io);
+        }
 
-        $maxRetries = 3;
-        $retryDelay = 5;
+        return $this->fetchTextWithHttp($link, $io);
+    }
 
-        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+    /**
+     * Fetches page content using Panther (for JS-rendered sites).
+     */
+    private function fetchTextWithBrowser(string $link, SymfonyStyle $io): ?string
+    {
+        $this->logger->debug("Fetching with browser: {$link}");
+        $client = $this->browserClientService->createClient();
+        $crawler = $client->request('GET', $link);
+        $class = substr_count($link, '#') > 1 ? 'section' : '';
+
+        $pElements = $crawler->filter("div{$class} > p");
+        if ($pElements->count() < 1) {
+            $pElements = $crawler->filter('p');
+        }
+
+        if ($pElements->count() < 1) {
+            $io->error("No <p> tags found in: {$link}");
+
+            return null;
+        }
+
+        $randomIndex = $pElements->count() > 1 ? rand(0, $pElements->count() - 1) : 0;
+        $text = $pElements->eq($randomIndex)->text();
+
+        if (empty($text) || strlen($text) < self::MIN_TEXT_LENGTH) {
+            $io->warning("Text too short in: {$link}");
+
+            return null;
+        }
+
+        return $text;
+    }
+
+    /**
+     * Fetches page content using a lightweight HTTP client (for static HTML sites).
+     * Includes retry logic with exponential backoff to handle rate limiting.
+     */
+    private function fetchTextWithHttp(string $link, SymfonyStyle $io): ?string
+    {
+        $this->logger->debug("Fetching with HTTP: {$link}");
+
+        $attempt = 0;
+        $lastError = null;
+
+        while ($attempt < $this->maxRetries) {
+            $attempt++;
+
             try {
-                // Fetch the content of the links
-                $crawler = $client->request("GET", $link);
+                $context = stream_context_create([
+                    'http' => [
+                        'method'     => 'GET',
+                        'user_agent' => 'Mozilla/5.0 (compatible; CertiBot/1.0)',
+                        'timeout'    => 30,
+                        'header'     => "Accept: text/html\r\n",
+                    ],
+                ]);
 
-                // Check if page contains rate limit message
-                $pageText = $crawler->filter('body')->text();
-                if (str_contains(strtolower($pageText), 'rate limit') ||
-                    str_contains(strtolower($pageText), 'too many requests')) {
-                    throw new \RuntimeException("Request rate limit has been exceeded.");
-                }
+                $html = @file_get_contents($link, false, $context);
 
-                // Successfully fetched, now extract text
-                $class = substr_count($link, '#') > 1 ? 'section' : '';
+                // Check if request was successful
+                if ($html === false) {
+                    $error = error_get_last();
+                    $lastError = $error['message'] ?? 'Unknown error';
 
-                $pElements = $crawler->filter('div' . $class . ' > p');
-                $pTagsCount = $pElements->count();
-                if ($pTagsCount < 1) {
-                    $pElements = $crawler->filter('p');
-                    $pTagsCount = $pElements->count();
-
-                    if ($pTagsCount < 1) {
-                        $io->warning('No <p> tags found in the link: ' . $link);
-                        return null;
+                    // Check if it's a rate limit error (HTTP 429 or similar)
+                    if (strpos($lastError, '429') !== false || strpos($lastError, 'Too Many Requests') !== false) {
+                        if ($attempt < $this->maxRetries) {
+                            $backoffDelay = $this->retryDelay * pow(2, $attempt - 1);
+                            $io->warning("Rate limit detected for {$link}. Waiting {$backoffDelay} seconds before retry {$attempt}/{$this->maxRetries}...");
+                            $this->logger->warning("Rate limit hit for {$link}, retry {$attempt} after {$backoffDelay}s");
+                            sleep($backoffDelay);
+                            continue;
+                        }
                     }
+
+                    throw new \RuntimeException("Failed to fetch {$link}: {$lastError}");
                 }
 
-                $randomIndex = $pTagsCount > 1 ? rand(0, $pTagsCount - 1) : 0;
-                $pTag = $pElements->eq($randomIndex);
-                $text = $pTag->text();
+                // Successfully fetched content
+                $dom = new \DOMDocument();
+                @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+                $xpath = new \DOMXPath($dom);
 
-                if (empty($text) || strlen($text) < 50) {
-                    $io->warning("Text too short or empty in the link: $link");
+                $paragraphs = $xpath->query('//div[contains(@class,"description")]//p');
+                if ($paragraphs === false || $paragraphs->length === 0) {
+                    $paragraphs = $xpath->query('//div[@id="layout-content"]//p');
+                }
+                if ($paragraphs === false || $paragraphs->length === 0) {
+                    $paragraphs = $xpath->query('//p');
+                }
+
+                if ($paragraphs === false || $paragraphs->length === 0) {
+                    $io->error("No <p> tags found in: {$link}");
                     return null;
                 }
 
-                return $text;
-
-            } catch (\RuntimeException $e) {
-                $errorMsg = $e->getMessage();
-                $this->logger->error("Browser client error (attempt {$attempt}/{$maxRetries}): " . $errorMsg);
-
-                // Check if it's a rate limit error
-                if (str_contains(strtolower($errorMsg), 'rate limit') ||
-                    str_contains(strtolower($errorMsg), 'too many requests')) {
-
-                    if ($attempt < $maxRetries) {
-                        $waitTime = $retryDelay * $attempt;
-                        $io->warning("Rate limit detected for {$link}. Waiting {$waitTime} seconds before retry {$attempt}/{$maxRetries}...");
-                        sleep($waitTime);
-                        continue;
-                    } else {
-                        $io->error("Rate limit error persists after {$maxRetries} attempts for: {$link}");
-                        return null;
+                $candidates = [];
+                /** @var \DOMElement $p */
+                foreach ($paragraphs as $p) {
+                    $text = trim($p->textContent);
+                    if (strlen($text) >= self::MIN_TEXT_LENGTH) {
+                        $candidates[] = $text;
                     }
                 }
 
-                // Other runtime errors
-                if ($attempt < $maxRetries) {
-                    $io->warning("Error fetching {$link}, retrying in {$retryDelay} seconds... (attempt {$attempt}/{$maxRetries})");
-                    sleep($retryDelay);
-                    continue;
+                if (empty($candidates)) {
+                    $io->warning("No usable paragraphs found in: {$link}");
+                    return null;
                 }
 
-                $io->error("Failed to fetch {$link} after {$maxRetries} attempts: " . $errorMsg);
-                return null;
+                return $candidates[array_rand($candidates)];
 
-            } catch (\Exception $e) {
-                $this->logger->error("Unexpected error: " . $e->getMessage());
-                $io->error("Unexpected error for {$link}: " . $e->getMessage());
-                return null;
+            } catch (\RuntimeException $e) {
+                if ($attempt >= $this->maxRetries) {
+                    $io->error("Failed to fetch {$link} after {$this->maxRetries} attempts: " . $e->getMessage());
+                    $this->logger->error("Max retries exceeded for {$link}: " . $e->getMessage());
+                    return null;
+                }
             }
         }
 
@@ -378,88 +391,20 @@ class ReformulateTextToMcqCommand extends Command
     }
 
     /**
-     * Generates a question from the text using the OpenAI API.
-     *
-     * @param OpenAI\Client $openAIClient
-     * @param string $text
-     * @param string $link
-     * @param SymfonyStyle $io
-     * @return array|null
-     * @throws \JsonException
+     * Persists the generated questions to MongoDB.
      */
-    private function generateQuestionFromText(OpenAI\Client $openAIClient, string $text, string $link, SymfonyStyle $io): ?array
+    private function saveQuestionsToDatabase(DocSourceInterface $source, mixed $identifier, array $questions): void
     {
-        $this->logger->info("Call of OpenAI API for the link: ".$link);
-        // Use GPT-4 API to reformulate the text into a multiple-choice question
-        $response = $openAIClient->chat()->create([
-            'model' => $this->openAIModel,
-            'messages' => [
-                ['role' => 'system', 'content' => 'You are a helpful assistant.'],
-                [
-                    'role' => 'user',
-                    'content' => "Reformulate the following text into a multiple-choice 
-                                        question:\n\n$text. Give the correct answer to that multiple-choice question. 
-                                        In the content of the response message, only return a JSON array with three 
-                                        keys: 'question', 'choices' and 'answer.' The 'question' key should contain the 
-                                        question. The 'choices' key should contain the choices starting by A), B), C) 
-                                        or D), and separated by a question mark. The 'answer' key should contain the 
-                                        correct answer. The answer must be in the format: Correct Answer: <answer>. 
-                                        For example, Correct Answer: A."
-                ],
-            ],
-            'max_tokens' => $this->maxTokens,
-            'temperature' => $this->temperature,
-            'top_p' => $this->topP,
-            'n' => $this->nValue,
-        ]);
-
-        $this->logger->debug("Response received from OpenAI API: " . json_encode($response));
-        $content = $response->choices[0]->message->content;
-        $jsonContent = $content;
-        if (!str_starts_with($jsonContent, "{")) {
-            preg_match('/({[\s\S]*})/', $content, $matches);
-            if (!empty($matches[1])) {
-                $jsonContent = $matches[1];
-            } else {
-                $io->error('Invalid response format for the link: ' . $link);
-                return null;
-            }
-        }
-        $data = json_decode($jsonContent, true, 512, JSON_THROW_ON_ERROR);
-
-        if (!isset($data["choices"])) {
-            $io->error("No choices found in the response for the link: ".$link);
-            return null;
-        } elseif (!isset($data["answer"])) {
-            $io->error('No answer found in the response for the link: '.$link);
-            return null;
-        }
-
-        return [
-            'link' => $link,
-            'question' => $data['question'],
-            'choices' => $data['choices'],
-            'answer' => trim(explode('Correct Answer:', $data['answer'])[1]),
-        ];
-    }
-
-    /**
-     * Saves the generated questions to the database.
-     *
-     * @param int $version
-     * @param array $questions
-     * @return void
-     */
-    private function saveQuestionsToDatabase(int $version, array $questions): void
-    {
-        $mongoClient = new MongoDBClient($this->mongoDbUrl, [], []);
-        $collection = $mongoClient->selectCollection("symfony_certification", "sf{$version}_mcq_gpt-4o");
+        $mongoClient = new MongoDBClient($this->mongoDbUrl);
+        $collection = $mongoClient->selectCollection(
+            $source->getDatabaseName(),
+            $source->getMcqCollectionName($identifier)
+        );
         $collection->drop();
-
         $collection->insertOne([
-            "version" => "Symfony $version",
-            "mcq" => $questions,
-            "scraped_at" => new \DateTime()->format("Y-m-d H:i:s"),
+            'source'     => $source->getDocumentLabel($identifier),
+            'mcq'        => $questions,
+            'scraped_at' => (new \DateTime())->format('Y-m-d H:i:s'),
         ]);
     }
 

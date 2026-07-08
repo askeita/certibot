@@ -1,0 +1,13 @@
+parameters:
+    web_scraping:
+        # Delay in seconds between HTTP requests to documentation websites
+        # to avoid rate limiting (especially for php.net)
+        request_delay: 2  # 2 seconds between requests
+
+        # Maximum number of retries for failed requests
+        max_retries: 3
+
+        # Initial retry delay in seconds (will use exponential backoff)
+        retry_delay: 5
+
+
