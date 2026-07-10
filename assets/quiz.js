@@ -410,7 +410,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            window.location.assign(parsed.pathname + parsed.search + parsed.hash);
+            // Strictly validate URL components before composing a relative redirect target.
+            if (!/^\/[A-Za-z0-9\-._~!$&'()*+,;=:@/%]*$/.test(parsed.pathname)) {
+                return;
+            }
+            if (parsed.search && !/^\?[A-Za-z0-9\-._~!$&'()*+,;=:@/?%]*$/.test(parsed.search)) {
+                return;
+            }
+            if (parsed.hash && !/^#[A-Za-z0-9\-._~!$&'()*+,;=:@/?%]*$/.test(parsed.hash)) {
+                return;
+            }
+
+            const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
+            window.location.assign(safePath);
         } catch (e) {
             // Ignore invalid URLs.
         }
