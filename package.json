@@ -18,6 +18,9 @@
     },
     "license": "UNLICENSED",
     "private": true,
+    "engines": {
+        "node": ">=20.0.0"
+    },
     "scripts": {
         "dev-server": "encore dev-server",
         "dev": "encore dev",
