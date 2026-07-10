@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Form\QuizType;
 use App\Repository\MongoDBQueryBuilder;
 use Doctrine\ODM\MongoDB\DocumentManager;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -32,7 +33,8 @@ class QuizController extends AbstractController
      */
     public function __construct(
         #[Autowire(service: 'App\Repository\MongoDBQueryBuilder.mcq_gpt-4o')]
-        MongoDBQueryBuilder $mcqQueryBuilder
+        MongoDBQueryBuilder $mcqQueryBuilder,
+        private readonly LoggerInterface $logger
     )
     {
         $this->mcqQueryBuilder = $mcqQueryBuilder;
@@ -405,6 +407,11 @@ class QuizController extends AbstractController
             ]);
 
         } catch (\Exception $e) {
+            $this->logger->error('Failed to load exam topics.', [
+                'version' => $version,
+                'exception' => $e,
+            ]);
+
             return $this->render('symfony/no_exam_topics_found.html.twig', [
                 'version' => $version,
                 'error' => 'Unable to load exam topics at the moment.'
