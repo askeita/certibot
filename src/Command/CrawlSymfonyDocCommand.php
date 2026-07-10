@@ -127,7 +127,7 @@ class CrawlSymfonyDocCommand extends Command
         ), true);
 
         if (empty($topicsCollection)) {
-            $io->error("No exam topics found for Symfony version $version. Please check the database and eventually run the `CrawlSymfonyExamTopicsCommand` command.");
+            $io->error("No exam topics found for Symfony version $version. Please check the database and eventually run the `app:crawl:symfony-exam-topics` command.");
 
             return [];
         }
