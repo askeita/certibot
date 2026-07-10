@@ -386,14 +386,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Safely redirects to a URL only if it is a same-origin relative path.
-     * Prevents DOM-based XSS by rejecting javascript: URIs or external URLs.
+     * Safely redirects to a URL only if it resolves to a same-origin path.
+     * Prevents DOM-based XSS/open-redirect behavior by rejecting javascript: URIs,
+     * external URLs, protocol-relative URLs and malformed inputs.
      *
      * @param {string|null} url - The URL to redirect to.
      */
     function safeRedirect(url) {
-        if (typeof url === 'string' && /^\/[^/\\]/.test(url)) {
-            window.location.href = url;
+        if (typeof url !== 'string' || url.trim() === '') {
+            return;
+        }
+
+        try {
+            const parsed = new URL(url, window.location.origin);
+
+            // Only allow same-origin destinations.
+            if (parsed.origin !== window.location.origin) {
+                return;
+            }
+
+            // Enforce application-relative navigation and reject backslash tricks.
+            if (!parsed.pathname.startsWith('/') || /\\/.test(url)) {
+                return;
+            }
+
+            window.location.assign(parsed.pathname + parsed.search + parsed.hash);
+        } catch (e) {
+            // Ignore invalid URLs.
         }
     }
 
