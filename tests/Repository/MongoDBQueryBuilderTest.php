@@ -64,8 +64,7 @@ class MongoDBQueryBuilderTest extends TestCase
         $this->mockCollection
             ->expects(never())
             ->method('find')
-            ->with(['name' => 'test'])
-            ->willReturn(new \ArrayIterator($expectedResult));
+            ->with(['name' => 'test']);
         $this->queryBuilder->selectCollection("test_collection");
         $result = $this->queryBuilder->find(null);
 
