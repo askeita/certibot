@@ -4,6 +4,7 @@ namespace App\Tests\Controller;
 
 use App\Controller\QuizController;
 use App\Repository\MongoDBQueryBuilder;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -31,9 +32,10 @@ class QuizControllerTest extends WebTestCase
     public function setUp(): void
     {
         $mcqQueryBuilderMock = $this->createMock(MongoDBQueryBuilder::class);
+        $loggerMock = $this->createMock(LoggerInterface::class);
         $this->sessionMock = $this->createMock(SessionInterface::class);
 
-        $this->quizController = new QuizController($mcqQueryBuilderMock);
+        $this->quizController = new QuizController($mcqQueryBuilderMock, $loggerMock);
     }
 
     /**
