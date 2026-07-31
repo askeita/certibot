@@ -31,3 +31,7 @@ yarn-error.log
 ###> IDE ###
 /.idea/
 ###< IDE ###
+
+###> package managers ###
+yarn.lock
+###< package managers ###
