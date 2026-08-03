@@ -15,11 +15,41 @@ import tarfile
 import shutil
 import subprocess
 import argparse
+import platform
 from typing import Optional, Dict, Tuple
 
-# Configuration
-DRIVERS_DIR = "/var/www/html/github-ask/certibot/drivers"
-PLATFORM = "linux64"  # Change to "mac64" or "win64" if needed
+
+# Auto-detect platform
+def detect_platform() -> str:
+    """
+    Automatically detect the current platform.
+
+    Returns:
+        Platform string compatible with WebDriver downloads
+    """
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+
+    if system == 'linux':
+        return 'linux64' if '64' in machine or 'amd64' in machine or 'x86_64' in machine else 'linux32'
+    elif system == 'darwin':  # macOS
+        if machine in ('arm64', 'aarch64'):
+            return 'mac-arm64'
+        else:
+            return 'mac-x64'
+    elif system == 'windows':
+        return 'win64' if sys.maxsize > 2**32 else 'win32'
+    else:
+        raise RuntimeError(f"Unsupported platform: {system}/{machine}")
+
+
+# Get drivers directory from script location
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DRIVERS_DIR = os.path.join(SCRIPT_DIR, "drivers")
+PLATFORM = detect_platform()
+
+print(f"Detected platform: {PLATFORM}")
+print(f"Drivers directory: {DRIVERS_DIR}")
 
 
 class DriverUpdater:
@@ -42,8 +72,33 @@ class DriverUpdater:
         
     def extract_driver(self, archive_path: str) -> None:
         """Extract the driver from the downloaded archive"""
-        raise NotImplementedError
-        
+        driver_filename = self.get_driver_filename()
+
+        # Determine archive type and extract
+        if archive_path.endswith('.zip'):
+            with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+                # Find the driver executable
+                for file in zip_ref.namelist():
+                    if driver_filename in file or 'chromedriver' in file.lower() or 'geckodriver' in file.lower():
+                        # Extract with proper name
+                        with zip_ref.open(file) as source:
+                            with open(driver_filename, 'wb') as target:
+                                shutil.copyfileobj(source, target)
+                        break
+        elif archive_path.endswith(('.tar.gz', '.tgz')):
+            with tarfile.open(archive_path, 'r:gz') as tar_ref:
+                for member in tar_ref.getmembers():
+                    if driver_filename in member.name or 'chromedriver' in member.name.lower() or 'geckodriver' in member.name.lower():
+                        member.name = driver_filename
+                        tar_ref.extract(member)
+                        break
+        else:
+            raise ValueError(f"Unsupported archive format: {archive_path}")
+
+        # Set executable permissions (Unix only)
+        if platform.system() != 'Windows':
+            os.chmod(driver_filename, 0o750)  # More secure permissions
+
     def update(self) -> bool:
         """Update the driver"""
         print(f"\n{'=' * 60}")
@@ -92,7 +147,9 @@ class DriverUpdater:
         print("Extraction...")
         try:
             self.extract_driver(archive_name)
-            os.chmod(driver_filename, 0o755)
+            # Set executable permissions (Unix/Mac only)
+            if platform.system() != 'Windows':
+                os.chmod(driver_filename, 0o755)
             print("✅ Installation réussie")
         except Exception as e:
             print(f"❌ Erreur lors de l'extraction: {e}")
@@ -188,18 +245,35 @@ class ChromeDriverUpdater(DriverUpdater):
     def extract_driver(self, archive_path: str) -> None:
         """Extract ChromeDriver from zip"""
         with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+            # Extract all to current directory
             zip_ref.extractall(".")
             
-        # ChromeDriver is in a subdirectory
-        extracted_dir = f"chromedriver-{PLATFORM}"
-        if os.path.exists(extracted_dir):
-            shutil.move(f"{extracted_dir}/chromedriver", "chromedriver")
-            shutil.rmtree(extracted_dir)
-        elif os.path.exists("chromedriver"):
-            # Already extracted to the right place
-            pass
-        else:
-            raise Exception("Could not find extracted chromedriver")
+        # ChromeDriver is in a subdirectory (platform-dependent)
+        # Try different possible directory names
+        possible_dirs = [
+            f"chromedriver-{PLATFORM}",
+            "chromedriver-linux64",
+            "chromedriver-mac-arm64",
+            "chromedriver-mac-x64",
+            "chromedriver-win64",
+            "chromedriver"
+        ]
+
+        driver_name = "chromedriver.exe" if platform.system() == "Windows" else "chromedriver"
+
+        for extracted_dir in possible_dirs:
+            if os.path.exists(extracted_dir):
+                driver_path = os.path.join(extracted_dir, driver_name)
+                if os.path.exists(driver_path):
+                    shutil.move(driver_path, driver_name)
+                    shutil.rmtree(extracted_dir)
+                    return
+
+        # Check if already extracted to the right place
+        if os.path.exists(driver_name):
+            return
+
+        raise Exception("Could not find extracted chromedriver")
 
 
 class GeckoDriverUpdater(DriverUpdater):
@@ -228,21 +302,34 @@ class GeckoDriverUpdater(DriverUpdater):
         # Get latest release from GitHub API
         api_url = "https://api.github.com/repos/mozilla/geckodriver/releases/latest"
         
+        # Map platform names to geckodriver naming
+        platform_map = {
+            'linux64': 'linux64',
+            'linux32': 'linux32',
+            'mac-arm64': 'macos-aarch64',
+            'mac-x64': 'macos',
+            'win64': 'win64',
+            'win32': 'win32'
+        }
+
+        gecko_platform = platform_map.get(PLATFORM, 'linux64')
+
         try:
             with urllib.request.urlopen(api_url, timeout=10) as response:
                 data = json.loads(response.read())
                 
-            # Find the linux64 asset
+            # Find the appropriate asset for our platform
             for asset in data.get('assets', []):
                 name = asset.get('name', '')
-                if 'linux64' in name and name.endswith('.tar.gz'):
+                if gecko_platform in name and name.endswith('.tar.gz' if 'linux' in gecko_platform or 'macos' in gecko_platform else '.zip'):
                     return asset.get('browser_download_url')
         except Exception as e:
             print(f"⚠️  Erreur API GitHub: {e}")
             
         # Fallback: construct URL for latest
-        return "https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-latest-linux64.tar.gz"
-        
+        extension = '.tar.gz' if PLATFORM.startswith('linux') or PLATFORM.startswith('mac') else '.zip'
+        return f"https://github.com/mozilla/geckodriver/releases/latest/download/geckodriver-latest-{gecko_platform}{extension}"
+
     def get_driver_filename(self) -> str:
         return "geckodriver"
         
@@ -289,10 +376,18 @@ class EdgeDriverUpdater(DriverUpdater):
         
     def get_driver_download_url(self, version: str) -> str:
         """Get EdgeDriver download URL"""
-        # EdgeDriver uses the same distribution as Chrome
-        major_version = version.split('.')[0]
-        return f"https://msedgedriver.azureedge.net/{version}/edgedriver_linux64.zip"
-        
+        # Map platform names to Edge driver naming
+        edge_platform_map = {
+            'linux64': 'linux64',
+            'mac-arm64': 'mac64_m1',
+            'mac-x64': 'mac64',
+            'win64': 'win64',
+            'win32': 'win32'
+        }
+
+        edge_platform = edge_platform_map.get(PLATFORM, 'linux64')
+        return f"https://msedgedriver.azureedge.net/{version}/edgedriver_{edge_platform}.zip"
+
     def get_driver_filename(self) -> str:
         return "msedgedriver"
         
@@ -301,13 +396,17 @@ class EdgeDriverUpdater(DriverUpdater):
         with zipfile.ZipFile(archive_path, 'r') as zip_ref:
             zip_ref.extractall(".")
             
+        # Determine driver name based on platform
+        driver_name = "msedgedriver.exe" if platform.system() == "Windows" else "msedgedriver"
+        alt_name = "edgedriver.exe" if platform.system() == "Windows" else "edgedriver"
+
         # Rename if needed
-        if os.path.exists("msedgedriver"):
+        if os.path.exists(driver_name):
             pass
-        elif os.path.exists("edgedriver"):
-            shutil.move("edgedriver", "msedgedriver")
+        elif os.path.exists(alt_name):
+            shutil.move(alt_name, driver_name)
         else:
-            raise Exception("Could not find extracted msedgedriver")
+            raise Exception(f"Could not find extracted {driver_name}")
 
 
 def detect_browsers() -> Dict[str, bool]:
