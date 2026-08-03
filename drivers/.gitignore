@@ -1,11 +1,20 @@
-# ChromeDriver binaries
+# WebDriver binaries (platform-specific, should not be in version control)
 chromedriver
-chromedriver.old*
+chromedriver.exe
 geckodriver
+geckodriver.exe
+msedgedriver
+msedgedriver.exe
+
+# Old versions
+chromedriver.old*
+geckodriver.old*
+msedgedriver.old*
+*.old
+*.old.*
 
 # Downloaded archives
 *.zip
+*.tar.gz
+*.tgz
 
-# Backup files
-*.old
-*.old.*

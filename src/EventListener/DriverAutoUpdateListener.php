@@ -13,9 +13,8 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
  *
  * This provides an additional layer of automation beyond the BrowserClientService.
  *
- * NOTE: This listener is DISABLED by default. To enable it:
- * 1. Uncomment the AsEventListener attribute below
- * 2. Set DRIVER_AUTO_UPDATE_LISTENER=true in .env
+ * NOTE: This listener is DISABLED by default via DRIVER_AUTO_UPDATE_ENABLED=false.
+ * To enable it, set DRIVER_AUTO_UPDATE_ENABLED=true in your .env file.
  */
 class DriverAutoUpdateListener
 {
@@ -31,10 +30,14 @@ class DriverAutoUpdateListener
     ) {
     }
 
-    // Uncomment this attribute to enable the listener:
-    // #[AsEventListener(event: ConsoleCommandEvent::class)]
+    #[AsEventListener(event: ConsoleCommandEvent::class)]
     public function __invoke(ConsoleCommandEvent $event): void
     {
+        // Check if auto-update is enabled via environment variable
+        if (!filter_var($_ENV['DRIVER_AUTO_UPDATE_ENABLED'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
+
         $command = $event->getCommand();
         if ($command === null) {
             return;

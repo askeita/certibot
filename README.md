@@ -24,6 +24,105 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
   - **Recommended:** Google Chrome + ChromeDriver
   - Optional: Firefox + GeckoDriver, or Microsoft Edge + EdgeDriver
 
+## 🔧 Automatic WebDriver Updates
+
+This application includes an automatic WebDriver update system (ChromeDriver, GeckoDriver, EdgeDriver) to ensure compatibility with your installed browsers.
+
+### Prerequisites
+
+- Python 3.6+ installed and accessible via `python3`
+- Supported browsers installed (Chrome, Firefox, and/or Edge)
+
+### Manual Update
+
+```bash
+# Update all drivers
+php bin/console app:update-drivers
+
+# Update a specific driver
+php bin/console app:update-drivers chrome
+php bin/console app:update-drivers firefox
+php bin/console app:update-drivers edge
+
+# Force update (ignore cache)
+php bin/console app:update-drivers chrome --force
+
+# Clear version check cache
+php bin/console app:update-drivers --clear-cache
+```
+
+### Automatic Update
+
+To enable automatic driver updates before each crawl command, add to your `.env`:
+
+```env
+DRIVER_AUTO_UPDATE_ENABLED=true
+```
+
+When enabled, the system will automatically check and update drivers before:
+- `app:crawl:symfony-exam-topics`
+- `app:crawl:symfony-doc`
+
+### Configuration
+
+Available environment variables in `.env`:
+
+```env
+# Enable/disable automatic updates (default: false)
+DRIVER_AUTO_UPDATE_ENABLED=false
+
+# Interval between version checks in seconds (default: 86400 = 24h)
+DRIVER_CHECK_INTERVAL=86400
+
+# Timeout for update process in seconds (default: 120)
+DRIVER_UPDATE_TIMEOUT=120
+```
+
+### How It Works
+
+1. **Automatic platform detection**: The system auto-detects your OS (Linux, macOS, Windows)
+2. **Version checking**: Compares browser version with driver version
+3. **Smart caching**: Avoids frequent checks (24h default)
+4. **Automatic download**: Downloads and installs compatible version if needed
+
+### Multi-Platform Support
+
+The system supports:
+- **Linux**: linux64, linux32
+- **macOS**: mac-arm64 (Apple Silicon), mac-x64 (Intel)
+- **Windows**: win64, win32
+
+Platform detection is automatic, no configuration needed.
+
+### Troubleshooting
+
+#### Driver not found
+```bash
+# Force update
+php bin/console app:update-drivers chrome --force
+```
+
+#### Permission errors
+```bash
+# Ensure drivers directory is accessible
+chmod 755 drivers/
+```
+
+#### Python not found
+```bash
+# Check Python installation
+python3 --version
+
+# On some systems
+python --version
+```
+
+#### Version compatibility issues
+```bash
+# Clear cache and force update
+php bin/console app:update-drivers --clear-cache --force
+```
+
 ## Installation
 
 1. **Clone the repository**

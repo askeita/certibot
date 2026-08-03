@@ -14,14 +14,21 @@ use Symfony\Component\Process\Process;
  */
 class DriverUpdaterService
 {
-    private const CACHE_FILE = '/var/www/html/github-ask/certibot/var/cache/driver_check.json';
-    private const UPDATE_SCRIPT = '/var/www/html/github-ask/certibot/update_driver.py';
-    private const CHECK_INTERVAL = 86400; // 24 hours in seconds
+    private readonly string $cacheFile;
+    private readonly string $updateScript;
+    private readonly int $checkInterval;
+    private readonly int $processTimeout;
 
     public function __construct(
         private readonly LoggerInterface $logger,
         private readonly string $projectDir,
+        ?int $checkInterval = null,
+        ?int $processTimeout = null,
     ) {
+        $this->cacheFile = $projectDir . '/var/cache/driver_check.json';
+        $this->updateScript = $projectDir . '/update_driver.py';
+        $this->checkInterval = $checkInterval ?? (int)($_ENV['DRIVER_CHECK_INTERVAL'] ?? 86400);
+        $this->processTimeout = $processTimeout ?? (int)($_ENV['DRIVER_UPDATE_TIMEOUT'] ?? 120);
     }
 
     /**
@@ -48,12 +55,12 @@ class DriverUpdaterService
             // Run the update script with --detect flag
             $process = new Process([
                 'python3',
-                self::UPDATE_SCRIPT,
+                $this->updateScript,
                 $browser,
                 '--detect'
             ]);
 
-            $process->setTimeout(120); // 2 minutes timeout
+            $process->setTimeout($this->processTimeout);
             $process->run();
 
             if ($process->isSuccessful()) {
@@ -234,7 +241,7 @@ class DriverUpdaterService
      */
     private function shouldCheckUpdate(string $browser): bool
     {
-        $cacheFile = self::CACHE_FILE;
+        $cacheFile = $this->cacheFile;
 
         if (!file_exists($cacheFile)) {
             return true;
@@ -251,7 +258,7 @@ class DriverUpdaterService
             $now = time();
 
             // Check if interval has passed
-            return ($now - $lastCheck) > self::CHECK_INTERVAL;
+            return ($now - $lastCheck) > $this->checkInterval;
         } catch (\Exception $e) {
             $this->logger->error("Error reading cache: " . $e->getMessage());
             return true;
@@ -266,7 +273,7 @@ class DriverUpdaterService
      */
     private function updateCache(string $browser): void
     {
-        $cacheFile = self::CACHE_FILE;
+        $cacheFile = $this->cacheFile;
         $cacheDir = dirname($cacheFile);
 
         // Create cache directory if it doesn't exist
@@ -299,7 +306,7 @@ class DriverUpdaterService
      */
     public function clearCache(?string $browser = null): void
     {
-        $cacheFile = self::CACHE_FILE;
+        $cacheFile = $this->cacheFile;
 
         if (!file_exists($cacheFile)) {
             return;
