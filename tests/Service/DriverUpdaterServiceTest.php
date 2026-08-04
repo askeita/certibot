@@ -18,12 +18,12 @@ class DriverUpdaterServiceTest extends TestCase
         $this->tempDir = sys_get_temp_dir() . '/certibot_test_' . uniqid();
         mkdir($this->tempDir);
         mkdir($this->tempDir . '/var/cache', 0777, true);
-
+        
         $this->service = new DriverUpdaterService(
             new NullLogger(),
             $this->tempDir
         );
-
+        
         $this->tempCacheFile = $this->tempDir . '/var/cache/driver_check.json';
     }
 
@@ -42,11 +42,11 @@ class DriverUpdaterServiceTest extends TestCase
     {
         // Create a cache file
         file_put_contents($this->tempCacheFile, json_encode(['chrome' => ['last_check' => time()]]));
-
+        
         $this->assertFileExists($this->tempCacheFile);
-
+        
         $this->service->clearCache();
-
+        
         $this->assertFileDoesNotExist($this->tempCacheFile);
     }
 
@@ -58,9 +58,9 @@ class DriverUpdaterServiceTest extends TestCase
             'firefox' => ['last_check' => time()],
         ];
         file_put_contents($this->tempCacheFile, json_encode($cache));
-
+        
         $this->service->clearCache('chrome');
-
+        
         $this->assertFileExists($this->tempCacheFile);
         $content = json_decode(file_get_contents($this->tempCacheFile), true);
         $this->assertArrayNotHasKey('chrome', $content);
@@ -71,9 +71,9 @@ class DriverUpdaterServiceTest extends TestCase
     {
         // Should not throw an error even if cache doesn't exist
         $this->assertFileDoesNotExist($this->tempCacheFile);
-
+        
         $this->service->clearCache();
-
+        
         // Test passes if no exception is thrown
         $this->assertTrue(true);
     }
@@ -83,12 +83,12 @@ class DriverUpdaterServiceTest extends TestCase
         // This will fail because browsers may not be installed in test environment
         // But it should return an array structure
         $results = $this->service->updateAllDrivers();
-
+        
         $this->assertIsArray($results);
         $this->assertArrayHasKey('chrome', $results);
         $this->assertArrayHasKey('firefox', $results);
         $this->assertArrayHasKey('edge', $results);
-
+        
         // Each result should be a boolean
         $this->assertIsBool($results['chrome']);
         $this->assertIsBool($results['firefox']);
@@ -100,7 +100,7 @@ class DriverUpdaterServiceTest extends TestCase
         if (!is_dir($dir)) {
             return;
         }
-
+        
         $files = array_diff(scandir($dir), ['.', '..']);
         foreach ($files as $file) {
             $path = $dir . '/' . $file;
