@@ -293,7 +293,7 @@ class ReformulateTextToMcqCommand extends Command
      * @param SymfonyStyle $io
      * @return string|null
      */
-    private function fetchTextFromLink(string $link, $client, SymfonyStyle $io): ?string
+    private function fetchTextFromLink(string $link, Client $client, SymfonyStyle $io): ?string
     {
         $this->logger->debug("Processing link: " . $link);
 

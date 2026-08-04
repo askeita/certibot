@@ -44,7 +44,12 @@ class BrowserClientService
         // Automatically check and update driver if service is available
         if ($this->driverUpdater !== null) {
             try {
-                $this->driverUpdater->ensureDriverUpdated($this->browser);
+                $updateSuccess = $this->driverUpdater->ensureDriverUpdated($this->browser);
+                if (!$updateSuccess && $this->logger) {
+                    $this->logger->warning(
+                        "Driver update failed for {$this->browser}. Proceeding with existing driver, but compatibility issues may occur."
+                    );
+                }
             } catch (\Exception $e) {
                 // Log but don't fail - let the user see the actual error
                 if ($this->logger) {

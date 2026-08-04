@@ -73,7 +73,8 @@ class DriverUpdaterService
                 );
                 return false;
             }
-        } catch (ProcessFailedException $e) {
+        } catch (\Exception $e) {
+            // Catch all exceptions including ProcessFailedException and ProcessTimedOutException
             $this->logger->error(
                 "Exception during driver update for {$browser}: " . $e->getMessage()
             );
@@ -316,6 +317,8 @@ class DriverUpdaterService
             unlink($cacheFile);
             $this->logger->info("Driver update cache cleared");
         } else {
+            // Normalize browser name to lowercase for consistency
+            $browser = strtolower($browser);
             try {
                 $cache = json_decode(file_get_contents($cacheFile), true) ?? [];
                 unset($cache[$browser]);
