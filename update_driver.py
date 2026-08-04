@@ -335,8 +335,21 @@ class GeckoDriverUpdater(DriverUpdater):
         
     def extract_driver(self, archive_path: str) -> None:
         """Extract GeckoDriver from tar.gz"""
+        driver_filename = self.get_driver_filename()
         with tarfile.open(archive_path, 'r:gz') as tar_ref:
-            tar_ref.extractall(".")
+            # Safely extract only the geckodriver binary to prevent path traversal
+            for member in tar_ref.getmembers():
+                # Normalize member name and check for path traversal attempts
+                member_name = os.path.normpath(member.name).replace(os.sep, '/')
+                if member_name.startswith('../') or member_name.startswith('/'):
+                    raise ValueError(f"Path traversal attempt detected: {member.name}")
+
+                # Extract only the geckodriver executable
+                if 'geckodriver' in member_name.lower() and not member.isdir():
+                    # Extract to current directory with safe name
+                    member.name = driver_filename
+                    tar_ref.extract(member, path=".", filter='data')
+                    break
 
 
 class EdgeDriverUpdater(DriverUpdater):
