@@ -120,6 +120,19 @@ document.addEventListener('DOMContentLoaded', function() {
     window.testErrorMessage = showErrorMessage;
 
     // Function to generate quiz data
+    function getSafeRedirectUrl(rawUrl) {
+        if (!rawUrl) return null;
+        try {
+            const resolved = new URL(rawUrl, window.location.origin);
+            const isHttp = resolved.protocol === 'http:' || resolved.protocol === 'https:';
+            const isSameOrigin = resolved.origin === window.location.origin;
+            if (!isHttp || !isSameOrigin) return null;
+            return resolved.href;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async function generateQuizData(fetchOnlyTopics) {
         progressCard.classList.remove('d-none');
         startGenerationTimer();
@@ -210,7 +223,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             updateStep(step3, 'success');
             stopGenerationTimer();
-            setTimeout(() => { window.location.href = quizUrl; }, 3000);
+            setTimeout(() => {
+                const safeQuizUrl = getSafeRedirectUrl(quizUrl);
+                if (!safeQuizUrl) {
+                    showErrorMessage('Invalid quiz URL.');
+                    return;
+                }
+                window.location.href = safeQuizUrl;
+            }, 3000);
         } catch (error) {
             updateStep(step3, 'error');
             showErrorMessage(`Failed to generate quiz questions: ${error.message}`);
