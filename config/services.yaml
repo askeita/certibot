@@ -85,7 +85,6 @@ services:
     App\Command\ReformulateTextToMcqCommand:
         arguments:
             $mongoDbUrl: '%env(MONGODB_URL)%'
-            $openAIConfig: '%openai%'
         tags:
             - { name: 'console.command', command: 'app:reformulate-text-to-mcq' }
 
