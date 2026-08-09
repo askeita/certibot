@@ -23,16 +23,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const step = document.createElement('li');
         step.className = 'list-group-item';
 
-        let statusBadge = '';
+        // Create badge as DOM element
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+
         if (status === 'pending') {
-            statusBadge = '<span class="badge bg-info">In Progress</span>';
+            badge.className += ' bg-info';
+            badge.textContent = 'In Progress';
         } else if (status === 'success') {
-            statusBadge = '<span class="badge bg-success">Completed</span>';
+            badge.className += ' bg-success';
+            badge.textContent = 'Completed';
         } else if (status === 'error') {
-            statusBadge = '<span class="badge bg-danger">Error</span>';
+            badge.className += ' bg-danger';
+            badge.textContent = 'Error';
         }
 
-        step.innerHTML = statusBadge + ' ' + text;
+        // Add the text and badge to the step
+        step.appendChild(badge);
+        step.appendChild(document.createTextNode(' ' + text));
+
         progressSteps.appendChild(step);
         return step;
     }
