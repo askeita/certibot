@@ -89,4 +89,17 @@ services:
         tags:
             - { name: 'console.command', command: 'app:reformulate-text-to-mcq' }
 
+    App\Command\CrawlPhpManualDocCommand:
+        arguments:
+            $mongoDbUrl: '%env(MONGODB_URL)%'
+        tags:
+            - { name: 'console.command', command: 'app:crawl:php-manual-doc' }
+
+    App\Command\CrawlPhpManualTopicsCommand:
+        arguments:
+            $mongoDbUrl: '%env(MONGODB_URL)%'
+        tags:
+            - { name: 'console.command', command: 'app:crawl:php-manual-topics' }
+
+    # ── Security ────────────────────────────────────────────────
     App\Security\UserChecker: ~

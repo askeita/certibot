@@ -36,6 +36,9 @@ class CrawlPhpManualTopicsCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * Executes the command to store PHP manual topics in MongoDB.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -97,7 +100,7 @@ class CrawlPhpManualTopicsCommand extends Command
         $collection->insertOne([
             'source'     => $this->phpManualDocSource->getDocumentLabel(),
             'topics'     => $topics,
-            'scraped_at' => (new \DateTime())->format('Y-m-d H:i:s'),
+            'scraped_at' => new \DateTime()->format('Y-m-d H:i:s'),
         ]);
     }
 }
