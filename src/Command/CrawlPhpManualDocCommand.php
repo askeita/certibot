@@ -41,6 +41,9 @@ class CrawlPhpManualDocCommand extends Command
         parent::__construct();
     }
 
+    /**
+     * Executes the command to crawl PHP manual documentation links.
+     */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
