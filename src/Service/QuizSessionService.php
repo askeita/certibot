@@ -120,6 +120,9 @@ class QuizSessionService
     {
         $session->remove('questionIndex');
         $session->remove('questionTimers');
+        $session->remove('questionTimer');
+        $session->remove('timeLeft');
+        $session->remove('duration');
         $session->remove('userResponses');
     }
 
