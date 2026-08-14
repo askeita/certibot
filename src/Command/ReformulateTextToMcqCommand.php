@@ -273,30 +273,34 @@ class ReformulateTextToMcqCommand extends Command
     {
         $this->logger->debug("Fetching with browser: {$link}");
         $client = $this->browserClientService->createClient();
-        $crawler = $client->request('GET', $link);
-        $class = substr_count($link, '#') > 1 ? 'section' : '';
+        try {
+            $crawler = $client->request('GET', $link);
+            $class = substr_count($link, '#') > 1 ? 'section' : '';
 
-        $pElements = $crawler->filter("div{$class} > p");
-        if ($pElements->count() < 1) {
-            $pElements = $crawler->filter('p');
+            $pElements = $crawler->filter("div{$class} > p");
+            if ($pElements->count() < 1) {
+                $pElements = $crawler->filter('p');
+            }
+
+            if ($pElements->count() < 1) {
+                $io->error("No <p> tags found in: {$link}");
+
+                return null;
+            }
+
+            $randomIndex = $pElements->count() > 1 ? rand(0, $pElements->count() - 1) : 0;
+            $text = $pElements->eq($randomIndex)->text();
+
+            if (empty($text) || strlen($text) < self::MIN_TEXT_LENGTH) {
+                $io->warning("Text too short in: {$link}");
+
+                return null;
+            }
+
+            return $text;
+        } finally {
+            $client->quit();
         }
-
-        if ($pElements->count() < 1) {
-            $io->error("No <p> tags found in: {$link}");
-
-            return null;
-        }
-
-        $randomIndex = $pElements->count() > 1 ? rand(0, $pElements->count() - 1) : 0;
-        $text = $pElements->eq($randomIndex)->text();
-
-        if (empty($text) || strlen($text) < self::MIN_TEXT_LENGTH) {
-            $io->warning("Text too short in: {$link}");
-
-            return null;
-        }
-
-        return $text;
     }
 
     /**
