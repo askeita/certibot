@@ -253,7 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error in generateQuizData:', error);
             showErrorMessage(`Network error: ${error.message}`);
         });
-        startGenerationTimer();
     })
 
     // Fetches only topics (legacy support)
