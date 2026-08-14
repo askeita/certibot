@@ -35,6 +35,7 @@ class ReformulateTextToMcqCommand extends Command
 {
     private const MAX_QUESTIONS = 75;
     private const MIN_TEXT_LENGTH = 50;
+    private const MAX_CONSECUTIVE_ERRORS = 5;
 
     private int $requestDelay;
     private int $maxRetries;
@@ -189,6 +190,8 @@ class ReformulateTextToMcqCommand extends Command
     {
         $questions = [];
         $linkCount = 0;
+        $consecutiveErrors = 0;
+        $maxConsecutiveErrors = self::MAX_CONSECUTIVE_ERRORS;
 
         foreach ($links as $link) {
             try {
@@ -236,15 +239,6 @@ class ReformulateTextToMcqCommand extends Command
                 $waitTime = 5;
                 $io->note("Waiting {$waitTime} seconds before continuing...");
                 sleep($waitTime);
-            }
-        }
-
-        // Close browser client
-        if ($browserClient) {
-            try {
-                $browserClient->quit();
-            } catch (\Exception $e) {
-                $this->logger->warning("Failed to close browser client: " . $e->getMessage());
             }
         }
 
