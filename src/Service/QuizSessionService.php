@@ -106,18 +106,11 @@ class QuizSessionService
      */
     public function handleTimer(SessionInterface $session, int $questionIndex, int $duration): int
     {
-        $questionTimer = $session->get('questionTimer', []);
-        if (!isset($questionTimer[$questionIndex])) {
-            $questionTimer[$questionIndex] = $duration;
-        }
+        $questionTimers = $session->get('questionTimers', []);
+        $questionTimers[$questionIndex] = $questionTimers[$questionIndex] ?? $duration;
+        $session->set('questionTimers', $questionTimers);
 
-        $session->set('questionTimer', $questionTimer);
-
-        if ($session->get('timeLeft') !== null) {
-            return $session->get('timeLeft');
-        }
-
-        return $questionTimer[$questionIndex];
+        return (int) $questionTimers[$questionIndex];
     }
 
     /**
