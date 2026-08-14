@@ -53,11 +53,10 @@ class QuizSessionService
             return [];
         }
 
-        $totalQuestions = (int) round(($duration / 60) * 90 / $totalAvailable, 0, PHP_ROUND_HALF_UP);
+        $totalQuestions = max(1, (int) round($duration / 60, 0, PHP_ROUND_HALF_UP));
         $totalQuestions = min($totalQuestions, $totalAvailable);
-        $questions = array_splice($allQuestions, 0, $totalQuestions);
-        shuffle($questions);
-
+        shuffle($allQuestions);
+        $questions = array_slice($allQuestions, 0, $totalQuestions);
         return $questions;
     }
 
