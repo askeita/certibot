@@ -4,7 +4,7 @@
  * Unlike the Symfony flow (duration → version → quiz), PHP has no version.
  * This script simply picks a duration and navigates directly to /php/quiz.
  */
-import * as bootstrap from 'bootstrap';
+const bootstrap = window.bootstrap;
 
 document.addEventListener('DOMContentLoaded', function () {
     const phpStartBtn = document.getElementById('phpStartQuizBtn');
