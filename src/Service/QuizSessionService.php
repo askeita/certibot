@@ -124,6 +124,7 @@ class QuizSessionService
         $session->remove('timeLeft');
         $session->remove('duration');
         $session->remove('userResponses');
+        $session->remove('quizQuestions');
     }
 
     /**
