@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * SymfonyQuizController handles the Symfony certification quiz.
@@ -42,13 +42,13 @@ class SymfonyQuizController extends AbstractQuizController
     }
 
     #[Route('/{version}/quiz/save-timer', name: 'app_quiz_save_timer', methods: ['POST'])]
-    public function saveTimer(Request $request, SessionInterface $session, int $version): JsonResponse
+    public function saveTimer(Request $request, SessionInterface $session): JsonResponse
     {
         return $this->doSaveTimer($request, $session);
     }
 
     #[Route('/{version}/quiz/save-response', name: 'app_quiz_save_response', methods: ['POST'])]
-    public function saveResponse(Request $request, SessionInterface $session, int $version): JsonResponse
+    public function saveResponse(Request $request, SessionInterface $session): JsonResponse
     {
         return $this->doSaveResponse($request, $session);
     }

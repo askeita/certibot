@@ -33,9 +33,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class ReformulateTextToMcqCommand extends Command
 {
-    private const MAX_QUESTIONS = 75;
-    private const MIN_TEXT_LENGTH = 50;
-    private const MAX_CONSECUTIVE_ERRORS = 5;
+    private const int MAX_QUESTIONS = 75;
+    private const int MIN_TEXT_LENGTH = 50;
+    private const int MAX_CONSECUTIVE_ERRORS = 5;
 
     private int $requestDelay;
     private int $maxRetries;
@@ -113,7 +113,7 @@ class ReformulateTextToMcqCommand extends Command
 
         if (!$this->technologyRegistry->has($slug)) {
             $available = implode(', ', array_keys($this->technologyRegistry->all()));
-            $message = "Unknown source \"{$slug}\". Available: {$available}.";
+            $message = "Unknown source \"$slug\". Available: $available.";
             $io->error($message);
             throw new InvalidArgumentException($message);
         }
@@ -124,7 +124,7 @@ class ReformulateTextToMcqCommand extends Command
     /**
      * Resolves the version/identifier argument, validating it against the DocSource rules.
      */
-    private function resolveIdentifier(InputInterface $input, DocSourceInterface $source, SymfonyStyle $io): mixed
+    private function resolveIdentifier(InputInterface $input, DocSourceInterface $source, SymfonyStyle $io): ?int
     {
         if (!$source->supportsVersion()) {
             return null;
@@ -138,7 +138,7 @@ class ReformulateTextToMcqCommand extends Command
         }
 
         if (!$source->validateIdentifier($identifier)) {
-            $message = "Invalid version '{$identifier}' for {$source->getLabel()}.";
+            $message = "Invalid version '$identifier' for {$source->getLabel()}.";
             $io->error($message);
             throw new InvalidArgumentException($message);
         }
@@ -199,7 +199,7 @@ class ReformulateTextToMcqCommand extends Command
 
                 // Add delay between requests to avoid rate limiting (except for first request)
                 if ($linkCount > 1 && !$source->requiresBrowserForContent()) {
-                    $io->note("Waiting {$this->requestDelay} seconds before next request to avoid rate limiting...");
+                    $io->note("Waiting $this->requestDelay seconds before next request to avoid rate limiting...");
                     sleep($this->requestDelay);
                 }
 
@@ -231,13 +231,13 @@ class ReformulateTextToMcqCommand extends Command
 
                 // If too many consecutive errors, stop
                 if ($consecutiveErrors >= $maxConsecutiveErrors) {
-                    $io->warning("Too many consecutive errors ({$consecutiveErrors}). Stopping to avoid further issues.");
+                    $io->warning("Too many consecutive errors ($consecutiveErrors). Stopping to avoid further issues.");
                     break;
                 }
 
                 // Wait before continuing after an error
                 $waitTime = 5;
-                $io->note("Waiting {$waitTime} seconds before continuing...");
+                $io->note("Waiting $waitTime seconds before continuing...");
                 sleep($waitTime);
             }
         }
@@ -265,19 +265,19 @@ class ReformulateTextToMcqCommand extends Command
      */
     private function fetchTextWithBrowser(string $link, SymfonyStyle $io): ?string
     {
-        $this->logger->debug("Fetching with browser: {$link}");
+        $this->logger->debug("Fetching with browser: $link");
         $client = $this->browserClientService->createClient();
         try {
             $crawler = $client->request('GET', $link);
             $class = substr_count($link, '#') > 1 ? 'section' : '';
 
-            $pElements = $crawler->filter("div{$class} > p");
+            $pElements = $crawler->filter("div$class > p");
             if ($pElements->count() < 1) {
                 $pElements = $crawler->filter('p');
             }
 
             if ($pElements->count() < 1) {
-                $io->error("No <p> tags found in: {$link}");
+                $io->error("No <p> tags found in: $link");
 
                 return null;
             }
@@ -286,7 +286,7 @@ class ReformulateTextToMcqCommand extends Command
             $text = $pElements->eq($randomIndex)->text();
 
             if (empty($text) || strlen($text) < self::MIN_TEXT_LENGTH) {
-                $io->warning("Text too short in: {$link}");
+                $io->warning("Text too short in: $link");
 
                 return null;
             }
@@ -303,11 +303,9 @@ class ReformulateTextToMcqCommand extends Command
      */
     private function fetchTextWithHttp(string $link, SymfonyStyle $io): ?string
     {
-        $this->logger->debug("Fetching with HTTP: {$link}");
+        $this->logger->debug("Fetching with HTTP: $link");
 
         $attempt = 0;
-        $lastError = null;
-
         while ($attempt < $this->maxRetries) {
             $attempt++;
 
@@ -329,17 +327,17 @@ class ReformulateTextToMcqCommand extends Command
                     $lastError = $error['message'] ?? 'Unknown error';
 
                     // Check if it's a rate limit error (HTTP 429 or similar)
-                    if (strpos($lastError, '429') !== false || strpos($lastError, 'Too Many Requests') !== false) {
+                    if (str_contains($lastError, '429') || str_contains($lastError, 'Too Many Requests')) {
                         if ($attempt < $this->maxRetries) {
                             $backoffDelay = $this->retryDelay * pow(2, $attempt - 1);
-                            $io->warning("Rate limit detected for {$link}. Waiting {$backoffDelay} seconds before retry {$attempt}/{$this->maxRetries}...");
-                            $this->logger->warning("Rate limit hit for {$link}, retry {$attempt} after {$backoffDelay}s");
+                            $io->warning("Rate limit detected for $link. Waiting $backoffDelay seconds before retry $attempt/$this->maxRetries...");
+                            $this->logger->warning("Rate limit hit for $link, retry $attempt after {$backoffDelay}s");
                             sleep($backoffDelay);
                             continue;
                         }
                     }
 
-                    throw new \RuntimeException("Failed to fetch {$link}: {$lastError}");
+                    throw new \RuntimeException("Failed to fetch $link: $lastError");
                 }
 
                 // Successfully fetched content
@@ -356,7 +354,7 @@ class ReformulateTextToMcqCommand extends Command
                 }
 
                 if ($paragraphs === false || $paragraphs->length === 0) {
-                    $io->error("No <p> tags found in: {$link}");
+                    $io->error("No <p> tags found in: $link");
                     return null;
                 }
 
@@ -370,7 +368,7 @@ class ReformulateTextToMcqCommand extends Command
                 }
 
                 if (empty($candidates)) {
-                    $io->warning("No usable paragraphs found in: {$link}");
+                    $io->warning("No usable paragraphs found in: $link");
                     return null;
                 }
 
@@ -378,8 +376,8 @@ class ReformulateTextToMcqCommand extends Command
 
             } catch (\RuntimeException $e) {
                 if ($attempt >= $this->maxRetries) {
-                    $io->error("Failed to fetch {$link} after {$this->maxRetries} attempts: " . $e->getMessage());
-                    $this->logger->error("Max retries exceeded for {$link}: " . $e->getMessage());
+                    $io->error("Failed to fetch $link after $this->maxRetries attempts: " . $e->getMessage());
+                    $this->logger->error("Max retries exceeded for $link: " . $e->getMessage());
                     return null;
                 }
             }
@@ -402,7 +400,7 @@ class ReformulateTextToMcqCommand extends Command
         $collection->insertOne([
             'source'     => $source->getDocumentLabel($identifier),
             'mcq'        => $questions,
-            'scraped_at' => (new \DateTime())->format('Y-m-d H:i:s'),
+            'scraped_at' => new \DateTime()->format('Y-m-d H:i:s'),
         ]);
     }
 

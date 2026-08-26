@@ -3,7 +3,6 @@
 namespace App\Service;
 
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
 /**
@@ -12,18 +11,18 @@ use Symfony\Component\Process\Process;
  * This service ensures that the WebDriver version matches the installed browser version
  * to avoid compatibility issues during crawling operations.
  */
-class DriverUpdaterService
+readonly class DriverUpdaterService
 {
-    private readonly string $cacheFile;
-    private readonly string $updateScript;
-    private readonly int $checkInterval;
-    private readonly int $processTimeout;
+    private string $cacheFile;
+    private string $updateScript;
+    private int $checkInterval;
+    private int $processTimeout;
 
     public function __construct(
-        private readonly LoggerInterface $logger,
-        private readonly string $projectDir,
-        ?int $checkInterval = null,
-        ?int $processTimeout = null,
+        private LoggerInterface $logger,
+        private string          $projectDir,
+        ?int                    $checkInterval = null,
+        ?int                    $processTimeout = null,
     ) {
         $this->cacheFile = $projectDir . '/var/cache/driver_check.json';
         $this->updateScript = $projectDir . '/update_driver.py';

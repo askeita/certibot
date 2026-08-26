@@ -21,7 +21,7 @@ class PhpManualDocSource implements DocSourceInterface
      *
      * These slugs map directly to https://www.php.net/manual/en/{slug}.php
      */
-    public const TOPICS = [
+    public const array TOPICS = [
         'language.types'              => 'Types',
         'language.variables'          => 'Variables',
         'language.constants'          => 'Constants',

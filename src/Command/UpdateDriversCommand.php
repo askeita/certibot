@@ -82,10 +82,10 @@ class UpdateDriversCommand extends Command
             $totalCount = count($results);
 
             if ($successCount === $totalCount) {
-                $io->success("All drivers updated successfully ({$successCount}/{$totalCount})");
+                $io->success("All drivers updated successfully ($successCount/$totalCount)");
                 return Command::SUCCESS;
             } else {
-                $io->warning("Some drivers failed to update ({$successCount}/{$totalCount})");
+                $io->warning("Some drivers failed to update ($successCount/$totalCount)");
                 return Command::FAILURE;
             }
         } else {
@@ -95,14 +95,14 @@ class UpdateDriversCommand extends Command
                 return Command::FAILURE;
             }
 
-            $io->section("Updating {$browser} driver...");
+            $io->section("Updating $browser driver...");
             $success = $this->driverUpdater->ensureDriverUpdated($browser, $force);
 
             if ($success) {
-                $io->success("{$browser} driver updated successfully");
+                $io->success("$browser driver updated successfully");
                 return Command::SUCCESS;
             } else {
-                $io->error("Failed to update {$browser} driver");
+                $io->error("Failed to update $browser driver");
                 return Command::FAILURE;
             }
         }

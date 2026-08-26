@@ -70,7 +70,7 @@ class OpenAiMcqGenerator implements McqGeneratorInterface
                 'n' => $this->nValue,
             ]);
         } catch (\Exception $e) {
-            $this->logger->error("OpenAI API call failed for link {$link}: " . $e->getMessage());
+            $this->logger->error("OpenAI API call failed for link $link: " . $e->getMessage());
 
             return null;
         }
@@ -84,7 +84,7 @@ class OpenAiMcqGenerator implements McqGeneratorInterface
             if (!empty($matches[1])) {
                 $jsonContent = $matches[1];
             } else {
-                $this->logger->error("Invalid OpenAI response format for link: {$link}");
+                $this->logger->error("Invalid OpenAI response format for link: $link");
 
                 return null;
             }
@@ -93,26 +93,26 @@ class OpenAiMcqGenerator implements McqGeneratorInterface
         try {
             $data = json_decode($jsonContent, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            $this->logger->error("JSON decode error for link {$link}: " . $e->getMessage());
+            $this->logger->error("JSON decode error for link $link: " . $e->getMessage());
 
             return null;
         }
 
         if (!isset($data['choices'])) {
-            $this->logger->error("No choices in OpenAI response for link: {$link}");
+            $this->logger->error("No choices in OpenAI response for link: $link");
 
             return null;
         }
 
         if (!isset($data['answer'])) {
-            $this->logger->error("No answer in OpenAI response for link: {$link}");
+            $this->logger->error("No answer in OpenAI response for link: $link");
 
             return null;
         }
 
         $answerParts = explode('Correct Answer:', $data['answer']);
         if (count($answerParts) < 2) {
-            $this->logger->error("Unexpected answer format for link: {$link}");
+            $this->logger->error("Unexpected answer format for link: $link");
 
             return null;
         }

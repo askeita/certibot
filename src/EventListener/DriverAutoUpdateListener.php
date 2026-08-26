@@ -18,7 +18,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
  */
 class DriverAutoUpdateListener
 {
-    private const COMMANDS_REQUIRING_DRIVERS = [
+    private const array COMMANDS_REQUIRING_DRIVERS = [
         'app:crawl:symfony-exam-topics',
         'app:crawl:symfony-doc',
         // Add other commands that use browsers here
@@ -54,7 +54,7 @@ class DriverAutoUpdateListener
         $browser = $_ENV['BROWSER'] ?? 'chrome';
 
         $output = $event->getOutput();
-        $output->writeln("<comment>🔧 Vérification du driver {$browser}...</comment>");
+        $output->writeln("<comment>🔧 Vérification du driver $browser...</comment>");
 
         try {
             $this->driverUpdater->ensureDriverUpdated($browser);

@@ -12,15 +12,15 @@ use Symfony\Component\Mime\Address;
 /**
  * EmailService
  */
-class EmailService
+readonly class EmailService
 {
     /**
      * Constructor
      */
     public function __construct(
-        private readonly MailerInterface $mailer,
-        private readonly string $fromEmail = 'noreply@certibot.com',
-        private readonly string $fromName = 'CertiBot'
+        private MailerInterface $mailer,
+        private string          $fromEmail = 'noreply@certibot.com',
+        private string          $fromName = 'CertiBot'
     ) {
     }
 
@@ -34,7 +34,7 @@ class EmailService
      */
     public function sendVerificationEmail(User $user, string $verificationUrl): void
     {
-        $email = (new TemplatedEmail())
+        $email = new TemplatedEmail()
             ->from(new Address($this->fromEmail, $this->fromName))
             ->to($user->getEmail())
             ->subject('Please Confirm your Email')
