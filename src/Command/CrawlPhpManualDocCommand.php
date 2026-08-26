@@ -28,10 +28,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class CrawlPhpManualDocCommand extends Command
 {
-    private const BASE_URL = 'https://www.php.net/manual/en/';
-    private const HTTP_TIMEOUT = 30;
-    private const MAX_LINKS_PER_TOPIC = 8;
-    private const USER_AGENT = 'Mozilla/5.0 (compatible; CertiBot/1.0; +https://github.com/certibot)';
+    private const string BASE_URL = 'https://www.php.net/manual/en/';
+    private const int HTTP_TIMEOUT = 30;
+    private const int MAX_LINKS_PER_TOPIC = 8;
+    private const string USER_AGENT = 'Mozilla/5.0 (compatible; CertiBot/1.0; +https://github.com/certibot)';
 
     public function __construct(
         private readonly LoggerInterface $logger,
@@ -122,7 +122,7 @@ class CrawlPhpManualDocCommand extends Command
                 'section'    => $topic['title'],
                 'slug'       => $topic['slug'],
                 'links'      => $links,
-                'scraped_at' => (new \DateTime())->format('Y-m-d H:i:s'),
+                'scraped_at' => new \DateTime()->format('Y-m-d H:i:s'),
             ]);
 
             $io->success(sprintf('Crawled "%s": %d links found.', $topic['title'], count($links)));
@@ -138,7 +138,7 @@ class CrawlPhpManualDocCommand extends Command
     {
         $html = $this->fetchPageHtml($url);
         if ($html === null) {
-            $io->error("Failed to fetch page: {$url}");
+            $io->error("Failed to fetch page: $url");
 
             return [];
         }
@@ -212,7 +212,7 @@ class CrawlPhpManualDocCommand extends Command
         $html = @file_get_contents($url, false, $context);
 
         if ($html === false) {
-            $this->logger->error("HTTP fetch failed for: {$url}");
+            $this->logger->error("HTTP fetch failed for: $url");
 
             return null;
         }

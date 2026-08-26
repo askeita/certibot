@@ -23,7 +23,7 @@ use Symfony\Component\HttpFoundation\Session\SessionInterface;
  */
 abstract class AbstractQuizController extends AbstractController
 {
-    protected const DEFAULT_DURATION = 5400; // 90 minutes
+    protected const int DEFAULT_DURATION = 5400; // 90 minutes
 
     /** Extra route parameters (e.g. ['version' => 7]) shared by every generated URL. */
     protected array $routeParams = [];

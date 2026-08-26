@@ -8,12 +8,13 @@ use App\Repository\UserRepository;
 use App\Service\EmailVerificationService;
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\MongoDBException;
+use Random\RandomException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 
@@ -43,7 +44,7 @@ class RegistrationController extends AbstractController
     /**
      * Register user
      *
-     * @throws TransportExceptionInterface
+     * @throws TransportExceptionInterface|RandomException
      */
     #[Route('/register', name: 'app_register')]
     public function register(Request $request): Response

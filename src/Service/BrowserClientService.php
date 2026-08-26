@@ -9,7 +9,7 @@ use Symfony\Component\Panther\Client;
 /**
  * Service responsible for creating browser clients based on the configured browser and driver paths.
  */
-class BrowserClientService
+readonly class BrowserClientService
 {
     /**
      * Constructor
@@ -22,12 +22,12 @@ class BrowserClientService
      * @param LoggerInterface|null $logger Logger instance.
      */
     public function __construct(
-        private readonly string $browser,
-        private readonly ?string $chromeDriverPath,
-        private readonly ?string $geckoDriverPath,
-        private readonly ?string $edgeDriverPath,
-        private readonly ?DriverUpdaterService $driverUpdater = null,
-        private readonly ?LoggerInterface $logger = null,
+        private string                $browser,
+        private ?string               $chromeDriverPath,
+        private ?string               $geckoDriverPath,
+        private ?string               $edgeDriverPath,
+        private ?DriverUpdaterService $driverUpdater = null,
+        private ?LoggerInterface      $logger = null,
     ) {
     }
 

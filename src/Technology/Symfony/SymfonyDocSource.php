@@ -57,7 +57,7 @@ class SymfonyDocSource implements DocSourceInterface
 
     public function getDocumentLabel(mixed $identifier = null): string
     {
-        return "Symfony {$identifier}";
+        return "Symfony $identifier";
     }
 
     public function requiresBrowserForContent(): bool

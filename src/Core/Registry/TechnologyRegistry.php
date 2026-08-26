@@ -3,7 +3,7 @@
 namespace App\Core\Registry;
 
 use App\Core\DocSource\DocSourceInterface;
-use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
 /**
  * TechnologyRegistry — Plugin Registry Pattern.
@@ -24,7 +24,7 @@ class TechnologyRegistry
      * @param iterable<DocSourceInterface> $sources Auto-injected by Symfony via tagged iterator.
      */
     public function __construct(
-        #[TaggedIterator('app.doc_source')]
+        #[AutowireIterator('app.doc_source')]
         iterable $sources
     ) {
         foreach ($sources as $source) {

@@ -2,6 +2,7 @@
 
 namespace App\Document;
 
+use App\Repository\UserRepository;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
@@ -10,7 +11,7 @@ use Doctrine\ODM\MongoDB\Mapping\Annotations as MongoDB;
 /**
  * User Document
  */
-#[MongoDB\Document(collection: 'users', repositoryClass: \App\Repository\UserRepository::class)]
+#[MongoDB\Document(collection: 'users', repositoryClass: UserRepository::class)]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[MongoDB\Id]
@@ -28,7 +29,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[MongoDB\Field(type: 'collection')]
-    private array $roles = [];
+    private array $roles;
 
     #[MongoDB\Field(type: 'bool')]
     private bool $isVerified = false;
