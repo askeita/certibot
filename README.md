@@ -16,10 +16,14 @@ CertiBot is a Symfony application for generating, crawling, and reformulating mu
 
 ## Requirements
 
-- PHP >= 8.1
+- PHP >= 8.4 (with the `ctype`, `dom`, `iconv`, `libxml` and `mongodb` extensions)
 - [Composer](https://getcomposer.org/)
-- [Node.js](https://nodejs.org/) and npm (for JS assets)
-- [MongoDB](https://www.mongodb.com/)
+- [Symfony](https://symfony.com/) 7.4 (`^7.4`)
+- [Node.js](https://nodejs.org/) >= 20.0.0 and npm (for JS assets)
+- [MongoDB](https://www.mongodb.com/) (PHP library `mongodb/mongodb` `^2.1.1`, Doctrine MongoDB ODM Bundle `^5.6`)
+- [Symfony Panther](https://github.com/symfony/panther) `^2.1`
+- [PHPUnit](https://phpunit.de/) `^11.0` (dev)
+- Front-end assets: Webpack Encore `^5.3.1`, Webpack `^5.104.1`, Bootstrap `^5.3.6`, Stimulus `^3.0.0`
 - A supported browser + WebDriver for crawling:
   - **Recommended:** Google Chrome + ChromeDriver
   - Optional: Firefox + GeckoDriver, or Microsoft Edge + EdgeDriver
