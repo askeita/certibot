@@ -371,7 +371,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Enforce application-relative navigation and reject backslash tricks.
-            if (!parsed.pathname.startsWith('/') || /\\/.test(url)) {
+            // A normalized pathname starting with "//" (e.g. "/.//evil.com") would be
+            // treated as a protocol-relative URL by location.assign().
+            if (!parsed.pathname.startsWith('/') || parsed.pathname.startsWith('//') || /\\/.test(url)) {
                 return;
             }
 
