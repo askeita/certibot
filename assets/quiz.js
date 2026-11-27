@@ -365,8 +365,9 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const parsed = new URL(url, window.location.origin);
 
-            // Only allow same-origin destinations.
-            if (parsed.origin !== window.location.origin) {
+            // Only allow same-origin HTTP(S) destinations.
+            if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') ||
+                parsed.origin !== window.location.origin) {
                 return;
             }
 
@@ -377,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Strictly validate URL components before composing a relative redirect target.
+            // Strictly validate URL components before redirecting.
             if (!/^\/[A-Za-z0-9\-._~!$&'()*+,;=:@/%]*$/.test(parsed.pathname)) {
                 return;
             }
@@ -388,8 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const safePath = `${parsed.pathname}${parsed.search}${parsed.hash}`;
-            window.location.assign(safePath);
+            window.location.assign(parsed.href);
         } catch (e) {
             // Ignore invalid URLs.
         }
